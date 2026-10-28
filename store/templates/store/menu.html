@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#17251d">
+    <title>{% if store_config %}{{ store_config.name }}{% else %}Savor{% endif %} | Order fresh</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #17251d;
+            --muted: #718078;
+            --paper: #f8f8f3;
+            --white: #fff;
+            --accent: #e8793e;
+            --accent-dark: #c85c28;
+            --line: #e8ebe4;
+            --shadow: 0 16px 38px rgba(23, 37, 29, .08);
+        }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        a { color: inherit; }
+
+        .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+
+        .topbar {
+            display: flex;
+            min-height: 82px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--ink);
+            font-size: 1.25rem;
+            font-weight: 850;
+            letter-spacing: -.05em;
+            text-decoration: none;
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            place-items: center;
+            border-radius: 13px;
+            background: var(--accent);
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .nav { display: flex; align-items: center; gap: 24px; }
+
+        .nav-link {
+            color: #536158;
+            font-size: .92rem;
+            font-weight: 650;
+            text-decoration: none;
+        }
+
+        .nav-link:hover { color: var(--accent-dark); }
+
+        .cart-link {
+            display: inline-flex;
+            min-height: 43px;
+            align-items: center;
+            gap: 9px;
+            padding: 0 16px;
+            border-radius: 999px;
+            background: var(--ink);
+            color: white;
+            font-size: .9rem;
+            font-weight: 750;
+            text-decoration: none;
+            transition: background .2s ease, transform .2s ease;
+        }
+
+        .cart-link:hover { transform: translateY(-1px); background: #294333; }
+
+        .hero {
+            position: relative;
+            display: grid;
+            min-height: 330px;
+            align-items: center;
+            overflow: hidden;
+            padding: 46px clamp(24px, 6vw, 72px);
+            border-radius: 28px;
+            background:
+                radial-gradient(ellipse at 82% 55%, rgba(232, 121, 62, .2), transparent 35%),
+                linear-gradient(115deg, #17251d 0%, #233d2d 68%, #33563d 100%);
+            color: white;
+        }
+
+        .hero::after {
+            position: absolute;
+            right: 7%;
+            bottom: -100px;
+            width: 310px;
+            height: 310px;
+            border: 1px solid rgba(255,255,255,.13);
+            border-radius: 50%;
+            box-shadow: 0 0 0 30px rgba(255,255,255,.035), 0 0 0 64px rgba(255,255,255,.025);
+            content: "";
+        }
+
+        .hero-copy { position: relative; z-index: 1; max-width: 610px; }
+
+        .eyebrow {
+            margin: 0 0 14px;
+            color: #f6b58f;
+            font-size: .76rem;
+            font-weight: 800;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            max-width: 580px;
+            margin: 0;
+            font-size: clamp(2.5rem, 6vw, 4.55rem);
+            font-weight: 850;
+            letter-spacing: -.065em;
+            line-height: .99;
+        }
+
+        .hero-copy > p:not(.eyebrow) {
+            max-width: 450px;
+            margin: 20px 0 0;
+            color: #d3ded5;
+            font-size: 1.03rem;
+            line-height: 1.7;
+        }
+
+        .hero-action {
+            display: inline-flex;
+            margin-top: 25px;
+            padding: 13px 19px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: white;
+            font-size: .92rem;
+            font-weight: 750;
+            text-decoration: none;
+            transition: background .2s ease, transform .2s ease;
+        }
+
+        .hero-action:hover { transform: translateY(-2px); background: var(--accent-dark); }
+
+        .menu-section { padding: 62px 0 76px; }
+
+        .section-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: clamp(1.8rem, 4vw, 2.45rem);
+            letter-spacing: -.055em;
+        }
+
+        .section-heading p { margin: 8px 0 0; color: var(--muted); }
+
+        .search {
+            width: min(270px, 100%);
+            min-height: 45px;
+            padding: 0 15px;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            outline: none;
+            background: white;
+            color: var(--ink);
+            font: inherit;
+        }
+
+        .search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,121,62,.14); }
+
+        .category-nav {
+            display: flex;
+            gap: 9px;
+            overflow-x: auto;
+            margin: 0 0 32px;
+            padding: 2px 0 8px;
+            scrollbar-width: thin;
+        }
+
+        .category-pill {
+            flex: 0 0 auto;
+            padding: 10px 15px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: white;
+            color: #536158;
+            font-size: .86rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: border-color .2s ease, color .2s ease;
+        }
+
+        .category-pill:hover { border-color: var(--accent); color: var(--accent-dark); }
+
+        .category { margin-top: 35px; scroll-margin-top: 20px; }
+
+        .category-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0 0 16px;
+            font-size: 1.25rem;
+            letter-spacing: -.035em;
+        }
+
+        .category-title::after { height: 1px; flex: 1; background: var(--line); content: ""; }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .menu-card {
+            overflow: hidden;
+            border: 1px solid #eceee8;
+            border-radius: 19px;
+            background: var(--white);
+            box-shadow: 0 6px 20px rgba(23, 37, 29, .035);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .menu-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+        .food-image, .food-placeholder {
+            display: block;
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            background: #e9eee5;
+        }
+
+        .food-placeholder {
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle at 30% 25%, rgba(255,255,255,.76), transparent 28%),
+                linear-gradient(140deg, #f8d9bd, #f1e7c9 52%, #d7e5d1);
+            font-size: 3.2rem;
+        }
+
+        .card-content { padding: 17px 18px 18px; }
+
+        .card-title-row { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+
+        .card-title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 780;
+            letter-spacing: -.025em;
+        }
+
+        .price { flex: 0 0 auto; color: var(--accent-dark); font-size: .98rem; font-weight: 800; }
+
+        .description {
+            min-height: 42px;
+            margin: 9px 0 16px;
+            color: var(--muted);
+            font-size: .88rem;
+            line-height: 1.55;
+        }
+
+        .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+        .availability { color: #38804b; font-size: .78rem; font-weight: 750; }
+        .availability.unavailable { color: #8a918b; }
+
+        .add-button {
+            min-height: 38px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 11px;
+            background: var(--ink);
+            color: white;
+            cursor: pointer;
+            font: inherit;
+            font-size: .82rem;
+            font-weight: 750;
+            transition: background .2s ease;
+        }
+
+        .add-button:hover { background: var(--accent-dark); }
+        .add-button:focus-visible, a:focus-visible, .search:focus-visible { outline: 3px solid #f1a47d; outline-offset: 3px; }
+
+        .empty-state {
+            padding: 42px 24px;
+            border: 1px dashed #d8ded5;
+            border-radius: 18px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .empty-state strong { display: block; margin-bottom: 8px; color: var(--ink); font-size: 1.1rem; }
+
+        .no-results { display: none; padding: 28px 0; color: var(--muted); text-align: center; }
+
+        footer { padding: 22px 0 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+
+        @media (max-width: 800px) {
+            .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .hero::after { right: -100px; }
+        }
+
+        @media (max-width: 560px) {
+            .shell { width: min(100% - 28px, 1120px); }
+            .topbar { min-height: 70px; }
+            .nav { gap: 10px; }
+            .nav-link { display: none; }
+            .cart-link { min-height: 40px; padding: 0 13px; }
+            .hero { min-height: 320px; border-radius: 22px; }
+            .hero::after { right: -205px; opacity: .7; }
+            .menu-section { padding: 46px 0 55px; }
+            .section-heading { align-items: stretch; flex-direction: column; }
+            .search { width: 100%; }
+            .menu-grid { grid-template-columns: 1fr; gap: 14px; }
+            .food-image, .food-placeholder { height: 205px; }
+            .description { min-height: auto; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <header class="shell topbar">
+        <a class="brand" href="{% url 'store:menu_list' %}">
+            <span class="brand-mark" aria-hidden="true">S</span>
+            <span>{% if store_config %}{{ store_config.name }}{% else %}Savor Kitchen{% endif %}</span>
+        </a>
+        <nav class="nav" aria-label="Main navigation">
+            <a class="nav-link" href="#menu">Explore menu</a>
+            <a class="cart-link" href="{% url 'store:cart_detail' %}"><span aria-hidden="true">🛍</span> Your cart</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="shell hero" aria-labelledby="hero-title">
+            <div class="hero-copy">
+                <p class="eyebrow">Good food, made with care</p>
+                <h1 id="hero-title">A little joy in every bite.</h1>
+                <p>Freshly prepared favorites, made to bring everyone to the table. Find your next favorite below.</p>
+                <a class="hero-action" href="#menu">Browse the menu <span aria-hidden="true">&nbsp;↓</span></a>
+            </div>
+        </section>
+
+        <section class="shell menu-section" id="menu" aria-labelledby="menu-title">
+            <div class="section-heading">
+                <div>
+                    <h2 id="menu-title">Our menu</h2>
+                    <p>Made fresh. Ordered by you.</p>
+                </div>
+                <label>
+                    <span class="sr-only" hidden>Search menu items</span>
+                    <input class="search" id="menu-search" type="search" placeholder="Search the menu..." autocomplete="off">
+                </label>
+            </div>
+
+            {% if categories %}
+                <nav class="category-nav" aria-label="Menu categories">
+                    {% for category in categories %}
+                        <a class="category-pill" href="#category-{{ category.slug }}">{{ category.name }}</a>
+                    {% endfor %}
+                </nav>
+
+                {% for category in categories %}
+                    <section class="category" id="category-{{ category.slug }}" aria-labelledby="heading-{{ category.slug }}">
+                        <h3 class="category-title" id="heading-{{ category.slug }}">{{ category.name }}</h3>
+                        {% if category.items.all %}
+                            <div class="menu-grid">
+                                {% for item in category.items.all %}
+                                    <article class="menu-card" data-menu-item>
+                                        {% if item.image %}
+                                            <img class="food-image" src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
+                                        {% else %}
+                                            <div class="food-placeholder" aria-hidden="true">🍽️</div>
+                                        {% endif %}
+                                        <div class="card-content">
+                                            <div class="card-title-row">
+                                                <h4 class="card-title">{{ item.name }}</h4>
+                                                <span class="price">₦{{ item.price }}</span>
+                                            </div>
+                                            {% if item.description %}
+                                                <p class="description">{{ item.description }}</p>
+                                            {% else %}
+                                                <p class="description">Prepared fresh and ready to enjoy.</p>
+                                            {% endif %}
+                                            <div class="card-footer">
+                                                {% if item.is_available %}
+                                                    <span class="availability">● Available now</span>
+                                                    <form method="post" action="{% url 'store:cart_add' item.id %}">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="quantity" value="1">
+                                                        <button class="add-button" type="submit" aria-label="Add {{ item.name }} to cart">Add to cart +</button>
+                                                    </form>
+                                                {% else %}
+                                                    <span class="availability unavailable">Currently unavailable</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </article>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">New dishes are coming soon.</div>
+                        {% endif %}
+                    </section>
+                {% endfor %}
+                <p class="no-results" id="no-results">No menu items match your search.</p>
+            {% else %}
+                <div class="empty-state">
+                    <strong>The menu is getting ready.</strong>
+                    Please check back soon for something delicious.
+                </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer>
+        <div class="shell">
+            {% if store_config %}{{ store_config.name }}{% else %}Savor Kitchen{% endif %}
+            {% if store_config and store_config.address %}<span> · {{ store_config.address }}</span>{% endif %}
+        </div>
+    </footer>
+
+    <script>
+        const searchInput = document.getElementById('menu-search');
+        const noResults = document.getElementById('no-results');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim().toLocaleLowerCase();
+                let visibleItems = 0;
+
+                document.querySelectorAll('[data-menu-item]').forEach((card) => {
+                    const matches = card.textContent.toLocaleLowerCase().includes(query);
+                    card.hidden = !matches;
+                    if (matches) visibleItems += 1;
+                });
+
+                document.querySelectorAll('.category').forEach((category) => {
+                    category.hidden = !category.querySelector('[data-menu-item]:not([hidden])');
+                });
+
+                if (noResults) noResults.style.display = visibleItems ? 'none' : 'block';
+            });
+        }
+    </script>
+</body>
+</html>

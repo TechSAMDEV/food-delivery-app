@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f7f7f7; }
+        .container { max-width: 900px; margin: auto; }
+        .card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        .total { font-size: 1.2rem; font-weight: bold; margin-top: 20px; }
+        .actions { margin-top: 20px; }
+        a.button, button { text-decoration: none; color: white; background: #ff7a00; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; }
+        .link { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>Your Cart</h1>
+
+            {% if cart %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in cart %}
+                            <tr>
+                                <td>{{ item.menu_item.name }}</td>
+                                <td>₦{{ item.price }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>₦{{ item.total_price }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="total">Total: ₦{{ cart.get_total_price }}</div>
+
+                <div class="actions">
+                    <a class="link" href="{% url 'store:menu_list' %}">Continue shopping</a>
+                    <a class="button" href="{% url 'store:checkout' %}">Proceed to checkout</a>
+                </div>
+            {% else %}
+                <p>Your cart is empty.</p>
+                <a class="button" href="{% url 'store:menu_list' %}">Browse menu</a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
