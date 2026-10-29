@@ -6,7 +6,7 @@ from geopy.distance import geodesic
 # 1. STORE & DELIVERY CONFIG
 # ================================
 class StoreConfiguration(models.Model):
-    name = models.CharField(max_length=100, default="Kilimanjaro Branch")
+    name = models.CharField(max_length=100, default="savor branch")
     address = models.CharField(max_length=255)
     latitude = models.FloatField(help_text="Store latitude coordinate")
     longitude = models.FloatField(help_text="Store longitude coordinate")
