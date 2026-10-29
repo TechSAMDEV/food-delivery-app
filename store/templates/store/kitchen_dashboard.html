@@ -398,6 +398,10 @@
                 display: none;
             }
 
+            .top-actions a.manage-menu-link {
+                display: inline;
+            }
+
             .heading-row {
                 align-items: flex-start;
                 flex-direction: column;
@@ -453,6 +457,10 @@
         </div>
         <nav class="top-actions" aria-label="Dashboard navigation">
             <a href="{% url 'store:menu_list' %}">View menu</a>
+            <a class="manage-menu-link" href="{% url 'store:menu_manage' %}">Manage menu</a>
+            {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+                <a href="{% url 'staff_register' %}">Manage staff</a>
+            {% endif %}
             <form class="logout-form" method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button class="logout-button" type="submit">Sign out</button>

@@ -8,10 +8,12 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
 from django.db import transaction
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.models import UserAddress
 from .models import Category, MenuItem, Order, OrderItem, StoreConfiguration
 from .carts import Cart
+from .forms import CategoryForm, MenuItemForm
 
 
 def menu_list_view(request):
@@ -34,6 +36,7 @@ def cart_add_view(request, item_id):
     menu_item = get_object_or_404(MenuItem, id=item_id)
 
     if not menu_item.is_available:
+        messages.error(request, f'{menu_item.name} is currently unavailable.')
         return redirect('store:menu_list')
 
     try:
@@ -42,10 +45,40 @@ def cart_add_view(request, item_id):
         quantity = 0
 
     if quantity < 1:
+        messages.error(request, 'Enter a quantity greater than zero.')
         return redirect('store:menu_list')
 
     cart.add(menu_item=menu_item, quantity=quantity)
+    messages.success(request, f'{menu_item.name} was added to your cart.')
     return redirect('store:menu_list')
+
+
+@require_POST
+def cart_update_view(request, item_id):
+    cart = Cart(request)
+    menu_item = get_object_or_404(MenuItem, pk=item_id)
+    try:
+        quantity = int(request.POST.get('quantity', ''))
+    except (TypeError, ValueError):
+        quantity = 0
+
+    if quantity < 1:
+        messages.error(request, 'Enter a quantity greater than zero.')
+    elif not menu_item.is_available:
+        messages.error(request, f'{menu_item.name} is currently unavailable.')
+    else:
+        cart.update(menu_item, quantity)
+        messages.success(request, f'{menu_item.name} quantity was updated.')
+
+    return redirect('store:cart_detail')
+
+
+@require_POST
+def cart_remove_view(request, item_id):
+    cart = Cart(request)
+    cart.remove(item_id)
+    messages.success(request, 'Item removed from your cart.')
+    return redirect('store:cart_detail')
 
 
 def cart_detail_view(request):
@@ -123,11 +156,63 @@ def calculate_delivery_api(request):
 @login_required
 def checkout_view(request):
     cart = Cart(request)
-    if len(cart.cart) == 0:
+    cart_items = list(cart)
+    if not cart_items:
         return redirect('store:cart_detail')
 
     store_config = StoreConfiguration.objects.first()
-    user_addresses = request.user.addresses.all()
+    user_addresses = list(request.user.addresses.order_by('-is_default', '-created_at'))
+    if request.method == 'POST':
+        order_type = request.POST.get('order_type', Order.OrderType.DELIVERY)
+    else:
+        default_order_type = (
+            Order.OrderType.DELIVERY
+            if store_config
+            else Order.OrderType.PICKUP
+        )
+        order_type = request.GET.get('order_type', default_order_type)
+    selected_address_id = request.POST.get('address_id', '') if request.method == 'POST' else request.GET.get('address_id', '')
+    if not selected_address_id and request.method != 'POST':
+        default_address = next((address for address in user_addresses if address.is_default), None)
+        if default_address:
+            selected_address_id = str(default_address.id)
+    subtotal = sum(
+        (item['menu_item'].price * item['quantity'] for item in cart_items),
+        Decimal('0.00'),
+    )
+    delivery_fee = Decimal('0.00')
+    delivery_fee_available = True
+
+    if order_type == Order.OrderType.DELIVERY:
+        if not store_config:
+            delivery_fee_available = False
+        else:
+            selected_address = next(
+                (address for address in user_addresses if str(address.id) == str(selected_address_id)),
+                next((address for address in user_addresses if address.is_default), None),
+            )
+            if selected_address and selected_address.latitude is not None and selected_address.longitude is not None:
+                coordinates_valid = (
+                    math.isfinite(selected_address.latitude)
+                    and math.isfinite(selected_address.longitude)
+                    and -90 <= selected_address.latitude <= 90
+                    and -180 <= selected_address.longitude <= 180
+                )
+                if coordinates_valid:
+                    delivery_fee_value, _, is_valid = store_config.calculate_delivery_fee(
+                        selected_address.latitude,
+                        selected_address.longitude,
+                    )
+                    if is_valid:
+                        delivery_fee = Decimal(str(delivery_fee_value))
+                    else:
+                        delivery_fee_available = False
+                else:
+                    delivery_fee_available = False
+            else:
+                delivery_fee = store_config.base_delivery_fee
+
+    total_amount = subtotal + delivery_fee
 
     def render_checkout(error=None):
         return render(request, 'store/checkout.html', {
@@ -135,11 +220,15 @@ def checkout_view(request):
             'addresses': user_addresses,
             'store_config': store_config,
             'error': error,
+            'subtotal': subtotal,
+            'delivery_fee': delivery_fee,
+            'total_amount': total_amount,
+            'delivery_fee_available': delivery_fee_available,
+            'selected_order_type': order_type,
+            'selected_address_id': str(selected_address_id),
         })
 
     if request.method == 'POST':
-        order_type = request.POST.get('order_type', 'DELIVERY')
-
         if order_type not in dict(Order.OrderType.choices):
             return render_checkout('Please select a valid order type.')
 
@@ -147,6 +236,8 @@ def checkout_view(request):
         delivery_fee = Decimal('0.00')
 
         if order_type == 'DELIVERY':
+            if not user_addresses:
+                return render_checkout('Add a delivery address before placing a delivery order.')
             if not store_config:
                 return render_checkout('Delivery is unavailable because the store location is not configured.')
 
@@ -154,7 +245,9 @@ def checkout_view(request):
             if not address_id:
                 return render_checkout('Please select a delivery address.')
 
-            delivery_address = get_object_or_404(UserAddress, id=address_id, user=request.user)
+            delivery_address = UserAddress.objects.filter(id=address_id, user=request.user).first()
+            if not delivery_address:
+                return render_checkout('Please select one of your saved delivery addresses.')
 
             # Recalculate delivery fee securely on backend
             if delivery_address.latitude is not None and delivery_address.longitude is not None:
@@ -174,10 +267,6 @@ def checkout_view(request):
                 delivery_fee = Decimal(str(fee))
             else:
                 delivery_fee = store_config.base_delivery_fee
-
-        cart_items = list(cart)
-        if len(cart_items) != len(cart):
-            return render_checkout('A menu item in your cart is no longer available. Please review your cart.')
 
         unavailable_item = next(
             (item['menu_item'] for item in cart_items if not item['menu_item'].is_available),
@@ -231,6 +320,55 @@ def order_success_view(request, order_id):
 def is_kitchen_staff(user):
     """Helper to check if user is staff, kitchen, or admin."""
     return user.is_authenticated and (user.is_staff or getattr(user, 'role', '') in ['KITCHEN', 'ADMIN'])
+
+
+@login_required
+def menu_management_view(request):
+    """Show the staff menu editor and handle category creation."""
+    if not is_kitchen_staff(request.user):
+        return HttpResponseForbidden('Kitchen staff access is required.')
+
+    category_form = CategoryForm(request.POST or None)
+    if request.method == 'POST':
+        if category_form.is_valid():
+            category = category_form.save()
+            messages.success(request, f'Category "{category.name}" was added.')
+            return redirect('store:menu_manage')
+        messages.error(request, 'Please fix the category form errors.')
+
+    menu_items = MenuItem.objects.select_related('category').order_by('category__display_order', 'category__name', 'name')
+    return render(request, 'store/menu_management.html', {
+        'categories': Category.objects.order_by('display_order', 'name'),
+        'menu_items': menu_items,
+        'category_form': category_form,
+    })
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def menu_item_form_view(request, item_id=None):
+    """Create or edit a menu item from the staff-facing menu manager."""
+    if not is_kitchen_staff(request.user):
+        return HttpResponseForbidden('Kitchen staff access is required.')
+
+    menu_item = get_object_or_404(MenuItem, pk=item_id) if item_id is not None else None
+    form = MenuItemForm(
+        request.POST or None,
+        request.FILES or None,
+        instance=menu_item,
+    )
+    if request.method == 'POST':
+        if form.is_valid():
+            saved_item = form.save()
+            action = 'updated' if menu_item else 'added'
+            messages.success(request, f'"{saved_item.name}" was {action}.')
+            return redirect('store:menu_manage')
+        messages.error(request, 'Please fix the menu item form errors.')
+
+    return render(request, 'store/menu_item_form.html', {
+        'form': form,
+        'menu_item': menu_item,
+    })
 
 
 @login_required

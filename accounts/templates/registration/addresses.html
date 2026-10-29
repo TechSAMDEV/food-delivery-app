@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#17251d">
+    <title>My addresses | Savor Kitchen</title>
+    <style>
+        :root { --ink: #17251d; --muted: #718078; --paper: #f5f6f1; --white: #fff; --accent: #e8793e; --line: #e7ebe4; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--paper); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        a { color: inherit; }
+        .shell { width: min(950px, calc(100% - 40px)); margin: 0 auto; }
+        header { display: flex; min-height: 74px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 850; text-decoration: none; }
+        .mark { display: grid; width: 39px; height: 39px; place-items: center; border-radius: 13px; background: var(--ink); color: white; }
+        header a:last-child { color: #536158; font-size: .88rem; font-weight: 700; text-decoration: none; }
+        main { padding: 38px 0 60px; }
+        .eyebrow { margin: 0 0 7px; color: var(--accent); font-size: .72rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+        h1 { margin: 0; font-size: clamp(2rem, 5vw, 2.6rem); letter-spacing: -.06em; }
+        h2 { margin: 0; font-size: 1rem; }
+        .intro { margin: 8px 0 24px; color: var(--muted); line-height: 1.55; }
+        .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+        .card { padding: 21px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: 0 12px 30px rgba(23,37,29,.05); }
+        .address-list { display: grid; gap: 11px; margin-top: 16px; }
+        .address { padding: 13px; border: 1px solid var(--line); border-radius: 12px; }
+        .address strong { display: block; font-size: .9rem; }
+        .address span { display: block; margin-top: 4px; color: var(--muted); font-size: .83rem; }
+        .badge { display: inline-block; margin-top: 8px; padding: 4px 8px; border-radius: 999px; background: #eaf7ed; color: #367447; font-size: .7rem; font-weight: 800; }
+        .empty { margin-top: 14px; padding: 15px; border: 1px dashed #d6ddd4; border-radius: 12px; color: var(--muted); font-size: .85rem; }
+        .field { margin-top: 14px; }
+        label { display: block; margin-bottom: 6px; font-size: .8rem; font-weight: 750; }
+        input:not([type="checkbox"]) { width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid #dfe5dc; border-radius: 10px; background: white; color: var(--ink); font: inherit; }
+        input:focus { border-color: var(--accent); outline: 3px solid rgba(232,121,62,.14); }
+        .coordinates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .help, .errorlist, .coord-help { margin: 6px 0 0; color: var(--muted); font-size: .75rem; line-height: 1.45; }
+        .errorlist { color: #943d35; list-style: none; padding: 0; }
+        .error { margin: 15px 0 0; padding: 11px; border-radius: 9px; background: #fff3f1; color: #943d35; font-size: .84rem; }
+        .check { display: flex; align-items: center; gap: 8px; }
+        .check label { margin: 0; }
+        button { width: 100%; min-height: 44px; margin-top: 18px; border: 0; border-radius: 10px; background: var(--ink); color: white; cursor: pointer; font: inherit; font-size: .86rem; font-weight: 780; }
+        button:hover { background: #294333; }
+        .messages { display: grid; gap: 8px; margin-bottom: 17px; }
+        .message { padding: 11px 13px; border: 1px solid #b8dfc0; border-radius: 10px; background: #effaf1; color: #28643a; font-size: .86rem; }
+        @media (max-width: 700px) { .shell { width: min(100% - 28px, 950px); } .layout { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="shell">
+        <a class="brand" href="{% url 'store:menu_list' %}">
+            <span class="mark" aria-hidden="true">S</span>
+            <span>Savor Kitchen</span>
+        </a>
+        <a href="{% url 'store:menu_list' %}">Back to menu</a>
+    </header>
+    <main class="shell">
+        <p class="eyebrow">Your account</p>
+        <h1>Delivery addresses</h1>
+        <p class="intro">Save your delivery details for checkout. Coordinates are optional; without them, the store base delivery fee is used.</p>
+
+        {% if messages %}
+            <div class="messages" role="status">
+                {% for message in messages %}<div class="message">{{ message }}</div>{% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="layout">
+            <section class="card" aria-labelledby="saved-addresses">
+                <h2 id="saved-addresses">Saved addresses</h2>
+                {% if addresses %}
+                    <div class="address-list">
+                        {% for address in addresses %}
+                            <div class="address">
+                                <strong>{{ address.address_line }}</strong>
+                                <span>{{ address.city }}</span>
+                                {% if address.is_default %}<span class="badge">Default address</span>{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty">You have no saved addresses yet. Add one to place a delivery order.</div>
+                {% endif %}
+            </section>
+
+            <section class="card" aria-labelledby="add-address">
+                <h2 id="add-address">Add an address</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}<div class="error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+                    <div class="field">
+                        <label for="{{ form.address_line.id_for_label }}">Street address</label>
+                        {{ form.address_line }}
+                        {{ form.address_line.errors }}
+                    </div>
+                    <div class="field">
+                        <label for="{{ form.city.id_for_label }}">City</label>
+                        {{ form.city }}
+                        {{ form.city.errors }}
+                    </div>
+                    <div class="field">
+                        <label>Coordinates <span class="coord-help">(optional)</span></label>
+                        <div class="coordinates">
+                            <div>
+                                <label for="{{ form.latitude.id_for_label }}">Latitude</label>
+                                {{ form.latitude }}
+                            </div>
+                            <div>
+                                <label for="{{ form.longitude.id_for_label }}">Longitude</label>
+                                {{ form.longitude }}
+                            </div>
+                        </div>
+                        <p class="help">Used to check delivery distance and calculate the fee. Leave both blank to use the base fee.</p>
+                    </div>
+                    <div class="field check">
+                        {{ form.is_default }}
+                        <label for="{{ form.is_default.id_for_label }}">Make this my default address</label>
+                    </div>
+                    <button type="submit">Save address</button>
+                </form>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,121 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout</title>
+    <meta name="theme-color" content="#17251d">
+    <title>Checkout | Savor Kitchen</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background: #f7f7f7;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: auto;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 20px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 12px 0;
-        }
-
-        form select,
-        form input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 8px;
-            margin-bottom: 14px;
-        }
-
-        button {
-            background: #ff7a00;
-            color: white;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        .error {
-            color: #b22222;
-            background: #ffe6e6;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 16px;
-        }
+        :root { --ink: #17251d; --muted: #718078; --paper: #f5f6f1; --white: #fff; --accent: #e8793e; --line: #e7ebe4; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--paper); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        a { color: inherit; }
+        .shell { width: min(1050px, calc(100% - 40px)); margin: 0 auto; }
+        header { display: flex; min-height: 76px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 850; text-decoration: none; }
+        .mark { display: grid; width: 39px; height: 39px; place-items: center; border-radius: 13px; background: var(--ink); color: white; }
+        header > a:last-child { color: #536158; font-size: .88rem; font-weight: 700; text-decoration: none; }
+        main { padding: 38px 0 60px; }
+        h1 { margin: 0; font-size: clamp(2rem, 5vw, 2.6rem); letter-spacing: -.06em; }
+        .subtitle { margin: 8px 0 24px; color: var(--muted); }
+        .layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 19px; align-items: start; }
+        .card { padding: 22px; border: 1px solid var(--line); border-radius: 17px; background: var(--white); box-shadow: 0 12px 30px rgba(23,37,29,.05); }
+        h2 { margin: 0 0 18px; font-size: 1rem; }
+        .error { margin-bottom: 17px; padding: 12px 14px; border: 1px solid #f0c1bc; border-radius: 11px; background: #fff3f1; color: #943d35; font-size: .88rem; }
+        label { display: block; margin: 15px 0 7px; font-size: .82rem; font-weight: 750; }
+        select { width: 100%; min-height: 45px; padding: 0 12px; border: 1px solid #dfe5dc; border-radius: 10px; background: white; color: var(--ink); font: inherit; }
+        select:focus { border-color: var(--accent); outline: 3px solid rgba(232,121,62,.14); }
+        .address-tools { display: flex; justify-content: space-between; gap: 12px; margin: 10px 0 0; color: var(--muted); font-size: .8rem; }
+        .address-tools a { color: #b75328; font-weight: 750; text-decoration: none; }
+        .address-tools a:hover { text-decoration: underline; }
+        .delivery-note { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: #f5f6f1; color: #536158; font-size: .8rem; line-height: 1.5; }
+        .summary-list { display: grid; gap: 12px; }
+        .summary-item { display: flex; justify-content: space-between; gap: 12px; color: #536158; font-size: .87rem; }
+        .summary-item span:last-child { color: var(--ink); font-weight: 680; white-space: nowrap; }
+        .totals { display: grid; gap: 12px; margin-top: 18px; padding-top: 17px; border-top: 1px solid var(--line); }
+        .total { display: flex; justify-content: space-between; gap: 12px; font-weight: 800; }
+        .payment-note { margin: 17px 0 0; padding: 11px 12px; border-radius: 10px; background: #fff8eb; color: #795b27; font-size: .78rem; line-height: 1.5; }
+        .button { display: flex; width: 100%; min-height: 47px; align-items: center; justify-content: center; margin-top: 18px; border: 0; border-radius: 11px; background: var(--ink); color: white; cursor: pointer; font: inherit; font-size: .9rem; font-weight: 800; }
+        .button:hover { background: #294333; }
+        .button:disabled { background: #a7afa8; cursor: not-allowed; }
+        .availability { min-height: 1.25em; margin-top: 8px; color: #943d35; font-size: .78rem; }
+        .empty { color: var(--muted); font-size: .86rem; }
+        @media (max-width: 760px) { .shell { width: min(100% - 28px, 1050px); } .layout { grid-template-columns: 1fr; } main { padding-top: 28px; } }
     </style>
 </head>
-
 <body>
-    <div class="container">
+    <header class="shell">
+        <a class="brand" href="{% url 'store:menu_list' %}"><span class="mark" aria-hidden="true">S</span><span>Savor Kitchen</span></a>
+        <a href="{% url 'store:cart_detail' %}">← Back to cart</a>
+    </header>
+    <main class="shell">
         <h1>Checkout</h1>
+        <p class="subtitle">Choose how you would like to receive your order.</p>
 
-        {% if error %}
-        <div class="error">{{ error }}</div>
-        {% endif %}
+        {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
 
         <div class="layout">
-            <div class="card">
-                <form method="post">
+            <section class="card">
+                <h2>Fulfillment details</h2>
+                <form method="post" id="checkout-form">
                     {% csrf_token %}
-
                     <label for="order_type">Order type</label>
                     <select name="order_type" id="order_type">
-                        <option value="DELIVERY">Delivery</option>
-                        <option value="PICKUP">Pickup</option>
+                        {% if store_config %}
+                            <option value="DELIVERY" {% if selected_order_type == 'DELIVERY' %}selected{% endif %}>Home delivery</option>
+                        {% endif %}
+                        <option value="PICKUP" {% if selected_order_type == 'PICKUP' %}selected{% endif %}>Store pickup</option>
                     </select>
 
-                    <label for="address_id">Delivery address</label>
-                    <select name="address_id" id="address_id">
-                        <option value="">Select an address</option>
-                        {% for address in addresses %}
-                        <option value="{{ address.id }}">{{ address.address_line }}{% if address.is_default %}
-                            (Default){% endif %}</option>
-                        {% empty %}
-                        <option value="" disabled>No saved addresses</option>
-                        {% endfor %}
-                    </select>
-
-                    <button type="submit">Place Order</button>
+                    <div id="address-section">
+                        <label for="address_id">Delivery address</label>
+                        <select name="address_id" id="address_id">
+                            <option value="">Select an address</option>
+                            {% for address in addresses %}
+                                <option value="{{ address.id }}"
+                                    data-latitude="{{ address.latitude|default_if_none:'' }}"
+                                    data-longitude="{{ address.longitude|default_if_none:'' }}"
+                                    {% if selected_address_id == address.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ address.address_line }}, {{ address.city }}{% if address.is_default %} (Default){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="address-tools">
+                            {% if addresses %}
+                                <span>Select your saved delivery location.</span>
+                            {% else %}
+                                <span>No saved delivery address.</span>
+                            {% endif %}
+                            <a href="{% url 'address_list' %}">{% if addresses %}Manage addresses{% else %}Add address{% endif %}</a>
+                        </div>
+                        {% if not store_config %}
+                            <p class="delivery-note">Delivery is not configured yet. Store pickup is available.</p>
+                        {% endif %}
+                    </div>
+                    <p class="availability" id="delivery-message" aria-live="polite"></p>
+                    <button class="button" id="place-order" type="submit">Place order request</button>
                 </form>
-            </div>
+            </section>
 
-            <div class="card">
-                <h2>Order Summary</h2>
-                {% for item in cart %}
-                <div class="summary-item">
-                    <span>{{ item.menu_item.name }} x {{ item.quantity }}</span>
-                    <span>₦{{ item.total_price }}</span>
+            <aside class="card" aria-labelledby="summary-heading">
+                <h2 id="summary-heading">Order summary</h2>
+                {% if cart %}
+                    <div class="summary-list">
+                        {% for item in cart %}
+                            <div class="summary-item">
+                                <span>{{ item.menu_item.name }} × {{ item.quantity }}</span>
+                                <span>₦{{ item.total_price|floatformat:2 }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="empty">Your cart is empty.</p>
+                {% endif %}
+                <div class="totals">
+                    <div class="summary-item"><span>Subtotal</span><span id="subtotal" data-value="{{ subtotal }}">{{ subtotal|floatformat:2 }}</span></div>
+                    <div class="summary-item"><span>Delivery fee</span><span id="delivery-fee" data-value="{{ delivery_fee|floatformat:2 }}">{% if delivery_fee_available %}₦{{ delivery_fee|floatformat:2 }}{% else %}Unavailable{% endif %}</span></div>
+                    <div class="total"><span>Total</span><span id="total-amount">₦{{ total_amount|floatformat:2 }}</span></div>
                 </div>
-                {% empty %}
-                <p>Your cart is empty.</p>
-                {% endfor %}
-
-                <hr>
-                <div class="summary-item"><span>Subtotal</span><span>₦{{ cart.get_total_price }}</span></div>
-                <div class="summary-item"><span>Delivery Fee</span><span>₦{{
-                        store_config.base_delivery_fee|default:"0.00" }}</span></div>
-                <div class="summary-item"><strong>Total</strong><strong>₦{{ cart.get_total_price }}</strong></div>
-            </div>
+                <p class="payment-note">This places an order request. Online payment is not set up yet; payment must be arranged separately.</p>
+            </aside>
         </div>
-    </div>
-</body>
+    </main>
+    <script>
+        const orderType = document.getElementById('order_type');
+        const addressSelect = document.getElementById('address_id');
+        const addressSection = document.getElementById('address-section');
+        const feeLabel = document.getElementById('delivery-fee');
+        const totalLabel = document.getElementById('total-amount');
+        const deliveryMessage = document.getElementById('delivery-message');
+        const placeOrder = document.getElementById('place-order');
+        const subtotal = Number(document.getElementById('subtotal').dataset.value);
+        const baseFee = Number('{{ store_config.base_delivery_fee|default:"0.00" }}');
+        const hasStoreConfig = {% if store_config %}true{% else %}false{% endif %};
+        let estimateRequestId = 0;
 
+        function setFee(fee) {
+            feeLabel.textContent = `₦${fee.toFixed(2)}`;
+            totalLabel.textContent = `₦${(subtotal + fee).toFixed(2)}`;
+            feeLabel.dataset.value = fee.toFixed(2);
+            placeOrder.disabled = false;
+        }
+
+        async function updateDeliveryEstimate() {
+            const requestId = ++estimateRequestId;
+            deliveryMessage.textContent = '';
+            if (orderType.value !== 'DELIVERY') {
+                addressSection.hidden = true;
+                setFee(0);
+                return;
+            }
+
+            addressSection.hidden = false;
+            if (!hasStoreConfig) {
+                feeLabel.textContent = 'Unavailable';
+                totalLabel.textContent = `₦${subtotal.toFixed(2)}`;
+                placeOrder.disabled = true;
+                return;
+            }
+
+            const selectedAddress = addressSelect.options[addressSelect.selectedIndex];
+            if (!selectedAddress || !selectedAddress.value) {
+                feeLabel.textContent = `₦${baseFee.toFixed(2)}`;
+                totalLabel.textContent = `₦${(subtotal + baseFee).toFixed(2)}`;
+                placeOrder.disabled = true;
+                deliveryMessage.textContent = 'Select a saved address to place a delivery order.';
+                return;
+            }
+
+            const latitude = selectedAddress.dataset.latitude;
+            const longitude = selectedAddress.dataset.longitude;
+            if (!latitude || !longitude) {
+                setFee(baseFee);
+                return;
+            }
+
+            placeOrder.disabled = true;
+            feeLabel.textContent = 'Calculating…';
+            try {
+                const response = await fetch("{% url 'store:calculate_delivery' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ latitude, longitude })
+                });
+                const data = await response.json();
+                if (requestId !== estimateRequestId) return;
+                if (!response.ok) throw new Error(data.message || 'Could not calculate delivery fee.');
+                if (data.status !== 'success') {
+                    feeLabel.textContent = 'Unavailable';
+                    totalLabel.textContent = `₦${subtotal.toFixed(2)}`;
+                    deliveryMessage.textContent = data.message || 'This address is outside the delivery area.';
+                    return;
+                }
+                setFee(Number(data.delivery_fee));
+            } catch (error) {
+                if (requestId !== estimateRequestId) return;
+                feeLabel.textContent = 'Unavailable';
+                totalLabel.textContent = `₦${subtotal.toFixed(2)}`;
+                deliveryMessage.textContent = error.message;
+            }
+        }
+
+        orderType.addEventListener('change', updateDeliveryEstimate);
+        addressSelect.addEventListener('change', updateDeliveryEstimate);
+        updateDeliveryEstimate();
+    </script>
+</body>
 </html>

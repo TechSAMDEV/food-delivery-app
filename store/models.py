@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.conf import settings
 from geopy.distance import geodesic
@@ -24,8 +26,8 @@ class StoreConfiguration(models.Model):
         if distance_km > self.max_delivery_radius_km:
             return None, distance_km, False
             
-        fee = self.base_delivery_fee + (float(distance_km) * float(self.per_km_rate))
-        return round(fee, 2), round(distance_km, 2), True
+        fee = self.base_delivery_fee + (Decimal(str(distance_km)) * self.per_km_rate)
+        return fee.quantize(Decimal('0.01')), round(distance_km, 2), True
 
     def __str__(self):
         return self.name

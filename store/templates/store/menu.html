@@ -17,6 +17,8 @@
             --accent-dark: #c85c28;
             --line: #e8ebe4;
             --shadow: 0 16px 38px rgba(23, 37, 29, .08);
+            --staff-link: #B22222;
+            --staff-link-hover: hsl(0, 68%, 30%);
         }
 
         * {
@@ -108,6 +110,130 @@
         .cart-link:hover {
             transform: translateY(-1px);
             background: #294333;
+        }
+
+        .logout-form {
+            margin: 0;
+        }
+
+        .account-menu {
+            position: relative;
+        }
+
+        .account-trigger {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 11px 6px 7px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--white);
+            color: var(--ink);
+            cursor: pointer;
+            list-style: none;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .account-trigger::-webkit-details-marker {
+            display: none;
+        }
+
+        .account-menu[open] .account-trigger,
+        .account-trigger:hover {
+            border-color: #d7c7b9;
+            box-shadow: 0 5px 16px rgba(23, 37, 29, .07);
+        }
+
+        .account-avatar {
+            display: grid;
+            width: 36px;
+            height: 36px;
+            flex: 0 0 auto;
+            place-items: center;
+            border-radius: 50%;
+            background: #e9eee5;
+            color: #355641;
+            font-size: .9rem;
+            font-weight: 850;
+        }
+
+        .account-copy {
+            display: grid;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .account-name {
+            max-width: 150px;
+            overflow: hidden;
+            font-size: .82rem;
+            font-weight: 780;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .account-role {
+            color: var(--muted);
+            font-size: .7rem;
+            font-weight: 650;
+        }
+
+        .account-chevron {
+            width: 8px;
+            height: 8px;
+            margin-left: 4px;
+            transform: translateY(-2px) rotate(45deg);
+            border-right: 1.5px solid var(--muted);
+            border-bottom: 1.5px solid var(--muted);
+            transition: transform .2s ease;
+        }
+
+        .account-menu[open] .account-chevron {
+            transform: translateY(2px) rotate(225deg);
+        }
+
+        .account-popover {
+            position: absolute;
+            z-index: 5;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 220px;
+            padding: 7px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--white);
+            box-shadow: var(--shadow);
+        }
+
+        .account-popover a,
+        .account-popover button {
+            display: flex;
+            width: 100%;
+            min-height: 40px;
+            align-items: center;
+            padding: 0 11px;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            color: #405047;
+            cursor: pointer;
+            font: inherit;
+            font-size: .84rem;
+            font-weight: 680;
+            text-align: left;
+            text-decoration: none;
+        }
+
+        .account-popover a:hover,
+        .account-popover button:hover {
+            background: #f5f6f1;
+            color: var(--accent-dark);
+        }
+
+        .account-divider {
+            height: 1px;
+            margin: 5px 4px;
+            background: var(--line);
         }
 
         .hero {
@@ -448,6 +574,30 @@
                 padding: 0 13px;
             }
 
+            .account-trigger {
+                gap: 7px;
+                padding: 4px 8px 4px 4px;
+            }
+
+            .account-avatar {
+                width: 32px;
+                height: 32px;
+            }
+
+            .account-name {
+                max-width: 92px;
+                font-size: .76rem;
+            }
+
+            .account-role,
+            .account-chevron {
+                display: none;
+            }
+
+            .account-popover {
+                width: 200px;
+            }
+
             .hero {
                 min-height: 320px;
                 border-radius: 22px;
@@ -506,6 +656,38 @@
         </a>
         <nav class="nav" aria-label="Main navigation">
             <a class="nav-link" href="#menu">Explore menu</a>
+            {% if request.user.is_authenticated %}
+                <details class="account-menu">
+                    <summary class="account-trigger" aria-label="Account menu for {{ request.user.get_full_name|default:request.user.username }}">
+                        <span class="account-avatar" aria-hidden="true">{{ request.user.get_full_name|default:request.user.username|first|upper }}</span>
+                        <span class="account-copy">
+                            <span class="account-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+                            <span class="account-role">
+                                {% if request.user.is_superuser or request.user.is_staff %}Administrator{% else %}{{ request.user.get_role_display }}{% endif %}
+                            </span>
+                        </span>
+                        <span class="account-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="account-popover">
+                        <a href="{% url 'address_list' %}">My addresses</a>
+                        {% if request.user.is_staff or request.user.role == 'KITCHEN' or request.user.role == 'ADMIN' %}
+                            <a href="{% url 'store:kitchen_dashboard' %}">Kitchen dashboard</a>
+                            <a href="{% url 'store:menu_manage' %}">Manage menu</a>
+                        {% endif %}
+                        {% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+                            <a href="{% url 'staff_register' %}">Manage staff</a>
+                        {% endif %}
+                        <div class="account-divider" aria-hidden="true"></div>
+                        <form class="logout-form" method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit">Sign out</button>
+                        </form>
+                    </div>
+                </details>
+            {% else %}
+                <a class="nav-link" href="{% url 'login' %}">Sign in</a>
+                <a class="nav-link" href="{% url 'register' %}">Register</a>
+            {% endif %}
             <a class="cart-link" href="{% url 'store:cart_detail' %}"><span aria-hidden="true">🛍</span> Your cart</a>
         </nav>
     </header>

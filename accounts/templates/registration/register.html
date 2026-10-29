@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#17251d">
+    <title>Create your account | Savor Kitchen</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            display: grid;
+            min-height: 100vh;
+            margin: 0;
+            padding: 22px;
+            place-items: center;
+            background: radial-gradient(circle at 85% 20%, #e8eee6 0, transparent 32%), #f5f6f1;
+            color: #17251d;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .card {
+            width: min(100%, 470px);
+            padding: 36px;
+            border: 1px solid #e7ebe4;
+            border-radius: 22px;
+            background: white;
+            box-shadow: 0 18px 48px rgba(23,37,29,.09);
+        }
+        .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 30px; }
+        .mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; background: #17251d; color: white; font-size: 1.15rem; }
+        .brand-name { font-weight: 850; letter-spacing: -.04em; }
+        .caption { margin-top: 3px; color: #718078; font-size: .78rem; }
+        .eyebrow { margin: 0 0 8px; color: #e8793e; font-size: .73rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+        h1 { margin: 0; font-size: 2rem; letter-spacing: -.06em; }
+        .intro { margin: 9px 0 23px; color: #718078; font-size: .92rem; line-height: 1.55; }
+        .field { margin-top: 15px; }
+        label { display: block; margin-bottom: 7px; font-size: .84rem; font-weight: 750; }
+        input { width: 100%; min-height: 45px; padding: 0 12px; border: 1px solid #dfe5dc; border-radius: 10px; background: white; color: #17251d; font: inherit; }
+        input:focus { border-color: #e8793e; outline: 3px solid rgba(232,121,62,.15); }
+        .password-field { position: relative; }
+        .password-field input { padding-right: 52px; }
+        button.password-toggle { position: absolute; top: 2px; right: 3px; display: grid; width: 40px; min-height: 40px; margin: 0; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #718078; cursor: pointer; }
+        button.password-toggle:hover { background: #f2f4ef; color: #17251d; }
+        .password-toggle svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+        .help, .errorlist { margin: 6px 0 0; color: #718078; font-size: .78rem; line-height: 1.45; }
+        .errorlist { padding-left: 18px; color: #943d35; }
+        .form-errors { margin-bottom: 15px; padding: 12px; border-radius: 10px; background: #fff3f1; color: #943d35; font-size: .86rem; }
+        button[type="submit"] { width: 100%; min-height: 47px; margin-top: 22px; border: 0; border-radius: 11px; background: #17251d; color: white; cursor: pointer; font: inherit; font-weight: 800; }
+        button[type="submit"]:hover { background: #294333; }
+        .links { display: flex; justify-content: center; gap: 5px; margin: 18px 0 0; color: #718078; font-size: .84rem; }
+        .links a { color: #c85c28; font-weight: 750; text-decoration: none; }
+        @media (max-width: 480px) { .card { padding: 28px 22px; } }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="brand">
+            <span class="mark" aria-hidden="true">S</span>
+            <div><div class="brand-name">Savor Kitchen</div><div class="caption">Customer account</div></div>
+        </div>
+        <p class="eyebrow">Join us</p>
+        <h1>Create an account</h1>
+        <p class="intro">Register to save your details and make ordering your favorites easier.</p>
+
+        {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% if field.field.widget.input_type == 'password' %}
+                        <div class="password-field">
+                            {{ field }}
+                            <button class="password-toggle" type="button" data-password-toggle
+                                aria-label="Show password" aria-pressed="false"
+                                aria-controls="{{ field.id_for_label }}" title="Show password">
+                                <svg data-icon-show viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg data-icon-hide viewBox="0 0 24 24" aria-hidden="true" hidden>
+                                    <path d="m3 3 18 18"></path>
+                                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path>
+                                    <path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15.7 15.7 0 0 1-3 3.8"></path>
+                                    <path d="M6.2 6.2C3.5 8.1 2 12 2 12s3.6 7 10 7a10.7 10.7 0 0 0 4.1-.8"></path>
+                                </svg>
+                                <span class="sr-only">Toggle password visibility</span>
+                            </button>
+                        </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                    {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <button type="submit">Create customer account</button>
+        </form>
+
+        <p class="links"><span>Already registered?</span> <a href="{% url 'login' %}">Sign in</a></p>
+    </main>
+    {% include 'registration/password_toggle_script.html' %}
+</body>
+</html>
