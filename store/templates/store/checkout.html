@@ -1,26 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f7f7f7; }
-        .container { max-width: 1000px; margin: auto; }
-        .layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
-        .card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .summary-item { display: flex; justify-content: space-between; margin: 12px 0; }
-        form select, form input { width: 100%; padding: 10px; margin-top: 8px; margin-bottom: 14px; }
-        button { background: #ff7a00; color: white; padding: 12px 16px; border: none; border-radius: 6px; cursor: pointer; }
-        .error { color: #b22222; background: #ffe6e6; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f7f7f7;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 12px 0;
+        }
+
+        form select,
+        form input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 14px;
+        }
+
+        button {
+            background: #ff7a00;
+            color: white;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .error {
+            color: #b22222;
+            background: #ffe6e6;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Checkout</h1>
 
         {% if error %}
-            <div class="error">{{ error }}</div>
+        <div class="error">{{ error }}</div>
         {% endif %}
 
         <div class="layout">
@@ -38,9 +86,10 @@
                     <select name="address_id" id="address_id">
                         <option value="">Select an address</option>
                         {% for address in addresses %}
-                            <option value="{{ address.id }}">{{ address.address_line }}{% if address.is_default %} (Default){% endif %}</option>
+                        <option value="{{ address.id }}">{{ address.address_line }}{% if address.is_default %}
+                            (Default){% endif %}</option>
                         {% empty %}
-                            <option value="" disabled>No saved addresses</option>
+                        <option value="" disabled>No saved addresses</option>
                         {% endfor %}
                     </select>
 
@@ -51,20 +100,22 @@
             <div class="card">
                 <h2>Order Summary</h2>
                 {% for item in cart %}
-                    <div class="summary-item">
-                        <span>{{ item.menu_item.name }} x {{ item.quantity }}</span>
-                        <span>₦{{ item.total_price }}</span>
-                    </div>
+                <div class="summary-item">
+                    <span>{{ item.menu_item.name }} x {{ item.quantity }}</span>
+                    <span>₦{{ item.total_price }}</span>
+                </div>
                 {% empty %}
-                    <p>Your cart is empty.</p>
+                <p>Your cart is empty.</p>
                 {% endfor %}
 
                 <hr>
                 <div class="summary-item"><span>Subtotal</span><span>₦{{ cart.get_total_price }}</span></div>
-                <div class="summary-item"><span>Delivery Fee</span><span>₦{{ store_config.base_delivery_fee|default:"0.00" }}</span></div>
+                <div class="summary-item"><span>Delivery Fee</span><span>₦{{
+                        store_config.base_delivery_fee|default:"0.00" }}</span></div>
                 <div class="summary-item"><strong>Total</strong><strong>₦{{ cart.get_total_price }}</strong></div>
             </div>
         </div>
     </div>
 </body>
+
 </html>

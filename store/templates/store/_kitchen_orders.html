@@ -1,92 +1,97 @@
 {% if orders %}
-    <section class="orders" aria-label="Active orders">
-        {% for order in orders %}
-            <article class="order-card">
-                <div class="order-top">
-                    <div class="order-title">
-                        <div>
-                            <div class="order-number">Order #{{ order.id }}</div>
-                            <div class="order-time">Received {{ order.created_at|date:"d M Y, H:i" }}</div>
-                        </div>
-                    </div>
-                    <span class="badge {% if order.status == 'PREPARING' %}preparing{% elif order.status == 'OUT_FOR_DELIVERY' %}out-for-delivery{% endif %}">
-                        {{ order.get_status_display }}
-                    </span>
+<section class="orders" aria-label="Active orders">
+    {% for order in orders %}
+    <article class="order-card">
+        <div class="order-top">
+            <div class="order-title">
+                <div>
+                    <div class="order-number">Order #{{ order.id }}</div>
+                    <div class="order-time">Received {{ order.created_at|date:"d M Y, H:i" }}</div>
                 </div>
+            </div>
+            <span
+                class="badge {% if order.status == 'PREPARING' %}preparing{% elif order.status == 'OUT_FOR_DELIVERY' %}out-for-delivery{% endif %}">
+                {{ order.get_status_display }}
+            </span>
+        </div>
 
-                <div class="order-body">
-                    <section>
-                        <h2 class="column-label">Order items</h2>
-                        <div class="items">
-                            {% for item in order.items.all %}
-                                <div class="item">
-                                    <span class="item-name">{{ item.quantity }} × {{ item.menu_item.name }}</span>
-                                    <span class="item-price">₦{{ item.get_total|floatformat:2 }}</span>
-                                </div>
-                            {% empty %}
-                                <div class="item"><span class="item-name">No items recorded</span></div>
-                            {% endfor %}
-                        </div>
-                    </section>
-
-                    <section>
-                        <h2 class="column-label">Customer &amp; fulfillment</h2>
-                        <div class="customer-meta">
-                            <div><strong>Customer:</strong> {{ order.customer.get_full_name|default:order.customer.username }}</div>
-                            <div><strong>Order type:</strong> {{ order.get_order_type_display }}</div>
-                            {% if order.delivery_address %}
-                                <div><strong>Delivery to:</strong> {{ order.delivery_address.address_line }}, {{ order.delivery_address.city }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="order-total">
-                            <strong>Total</strong>
-                            <strong>₦{{ order.total_amount|floatformat:2 }}</strong>
-                        </div>
-                    </section>
+        <div class="order-body">
+            <section>
+                <h2 class="column-label">Order items</h2>
+                <div class="items">
+                    {% for item in order.items.all %}
+                    <div class="item">
+                        <span class="item-name">{{ item.quantity }} × {{ item.menu_item.name }}</span>
+                        <span class="item-price">₦{{ item.get_total|floatformat:2 }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="item"><span class="item-name">No items recorded</span></div>
+                    {% endfor %}
                 </div>
+            </section>
 
-                {% if order.status == 'PENDING' %}
-                    <div class="order-actions">
-                        <span class="action-hint">Confirm this order to begin preparation.</span>
-                        <form method="post" action="{% url 'store:update_order_status' order.id %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="status" value="PREPARING">
-                            <button class="advance-button" type="submit">Start preparing <span aria-hidden="true">→</span></button>
-                        </form>
+            <section>
+                <h2 class="column-label">Customer &amp; fulfillment</h2>
+                <div class="customer-meta">
+                    <div><strong>Customer:</strong> {{ order.customer.get_full_name|default:order.customer.username }}
                     </div>
-                {% elif order.status == 'PREPARING' %}
-                    <div class="order-actions">
-                        <span class="action-hint">
-                            {% if order.order_type == 'DELIVERY' %}Mark ready for the rider.{% else %}Complete when the customer collects it.{% endif %}
-                        </span>
-                        <form method="post" action="{% url 'store:update_order_status' order.id %}">
-                            {% csrf_token %}
-                            {% if order.order_type == 'DELIVERY' %}
-                                <input type="hidden" name="status" value="OUT_FOR_DELIVERY">
-                                <button class="advance-button" type="submit">Send for delivery <span aria-hidden="true">→</span></button>
-                            {% else %}
-                                <input type="hidden" name="status" value="DELIVERED">
-                                <button class="advance-button" type="submit">Complete pickup <span aria-hidden="true">✓</span></button>
-                            {% endif %}
-                        </form>
-                    </div>
-                {% elif order.status == 'OUT_FOR_DELIVERY' %}
-                    <div class="order-actions">
-                        <span class="action-hint">Confirm once the order has reached the customer.</span>
-                        <form method="post" action="{% url 'store:update_order_status' order.id %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="status" value="DELIVERED">
-                            <button class="advance-button" type="submit">Mark delivered <span aria-hidden="true">✓</span></button>
-                        </form>
-                    </div>
+                    <div><strong>Order type:</strong> {{ order.get_order_type_display }}</div>
+                    {% if order.delivery_address %}
+                    <div><strong>Delivery to:</strong> {{ order.delivery_address.address_line }}, {{
+                        order.delivery_address.city }}</div>
+                    {% endif %}
+                </div>
+                <div class="order-total">
+                    <strong>Total</strong>
+                    <strong>₦{{ order.total_amount|floatformat:2 }}</strong>
+                </div>
+            </section>
+        </div>
+
+        {% if order.status == 'PENDING' %}
+        <div class="order-actions">
+            <span class="action-hint">Confirm this order to begin preparation.</span>
+            <form method="post" action="{% url 'store:update_order_status' order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="PREPARING">
+                <button class="advance-button" type="submit">Start preparing <span aria-hidden="true">→</span></button>
+            </form>
+        </div>
+        {% elif order.status == 'PREPARING' %}
+        <div class="order-actions">
+            <span class="action-hint">
+                {% if order.order_type == 'DELIVERY' %}Mark ready for the rider.{% else %}Complete when the customer
+                collects it.{% endif %}
+            </span>
+            <form method="post" action="{% url 'store:update_order_status' order.id %}">
+                {% csrf_token %}
+                {% if order.order_type == 'DELIVERY' %}
+                <input type="hidden" name="status" value="OUT_FOR_DELIVERY">
+                <button class="advance-button" type="submit">Send for delivery <span
+                        aria-hidden="true">→</span></button>
+                {% else %}
+                <input type="hidden" name="status" value="DELIVERED">
+                <button class="advance-button" type="submit">Complete pickup <span aria-hidden="true">✓</span></button>
                 {% endif %}
-            </article>
-        {% endfor %}
-    </section>
+            </form>
+        </div>
+        {% elif order.status == 'OUT_FOR_DELIVERY' %}
+        <div class="order-actions">
+            <span class="action-hint">Confirm once the order has reached the customer.</span>
+            <form method="post" action="{% url 'store:update_order_status' order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="DELIVERED">
+                <button class="advance-button" type="submit">Mark delivered <span aria-hidden="true">✓</span></button>
+            </form>
+        </div>
+        {% endif %}
+    </article>
+    {% endfor %}
+</section>
 {% else %}
-    <section class="empty" aria-label="No active orders">
-        <div class="empty-icon" aria-hidden="true">🍽️</div>
-        <strong>All caught up</strong>
-        <p>New orders will appear here automatically.</p>
-    </section>
+<section class="empty" aria-label="No active orders">
+    <div class="empty-icon" aria-hidden="true">🍽️</div>
+    <strong>All caught up</strong>
+    <p>New orders will appear here automatically.</p>
+</section>
 {% endif %}

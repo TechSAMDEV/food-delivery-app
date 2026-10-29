@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,9 +19,13 @@
             --shadow: 0 16px 38px rgba(23, 37, 29, .08);
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
-        html { scroll-behavior: smooth; }
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
             margin: 0;
@@ -29,9 +34,14 @@
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
-        a { color: inherit; }
+        a {
+            color: inherit;
+        }
 
-        .shell { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+        .shell {
+            width: min(1120px, calc(100% - 40px));
+            margin: 0 auto;
+        }
 
         .topbar {
             display: flex;
@@ -63,7 +73,11 @@
             font-size: 1.1rem;
         }
 
-        .nav { display: flex; align-items: center; gap: 24px; }
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
 
         .nav-link {
             color: #536158;
@@ -72,7 +86,9 @@
             text-decoration: none;
         }
 
-        .nav-link:hover { color: var(--accent-dark); }
+        .nav-link:hover {
+            color: var(--accent-dark);
+        }
 
         .cart-link {
             display: inline-flex;
@@ -89,7 +105,10 @@
             transition: background .2s ease, transform .2s ease;
         }
 
-        .cart-link:hover { transform: translateY(-1px); background: #294333; }
+        .cart-link:hover {
+            transform: translateY(-1px);
+            background: #294333;
+        }
 
         .hero {
             position: relative;
@@ -111,13 +130,17 @@
             bottom: -100px;
             width: 310px;
             height: 310px;
-            border: 1px solid rgba(255,255,255,.13);
+            border: 1px solid rgba(255, 255, 255, .13);
             border-radius: 50%;
-            box-shadow: 0 0 0 30px rgba(255,255,255,.035), 0 0 0 64px rgba(255,255,255,.025);
+            box-shadow: 0 0 0 30px rgba(255, 255, 255, .035), 0 0 0 64px rgba(255, 255, 255, .025);
             content: "";
         }
 
-        .hero-copy { position: relative; z-index: 1; max-width: 610px; }
+        .hero-copy {
+            position: relative;
+            z-index: 1;
+            max-width: 610px;
+        }
 
         .eyebrow {
             margin: 0 0 14px;
@@ -137,7 +160,7 @@
             line-height: .99;
         }
 
-        .hero-copy > p:not(.eyebrow) {
+        .hero-copy>p:not(.eyebrow) {
             max-width: 450px;
             margin: 20px 0 0;
             color: #d3ded5;
@@ -158,9 +181,14 @@
             transition: background .2s ease, transform .2s ease;
         }
 
-        .hero-action:hover { transform: translateY(-2px); background: var(--accent-dark); }
+        .hero-action:hover {
+            transform: translateY(-2px);
+            background: var(--accent-dark);
+        }
 
-        .menu-section { padding: 62px 0 76px; }
+        .menu-section {
+            padding: 62px 0 76px;
+        }
 
         .section-heading {
             display: flex;
@@ -176,7 +204,10 @@
             letter-spacing: -.055em;
         }
 
-        .section-heading p { margin: 8px 0 0; color: var(--muted); }
+        .section-heading p {
+            margin: 8px 0 0;
+            color: var(--muted);
+        }
 
         .search {
             width: min(270px, 100%);
@@ -190,7 +221,10 @@
             font: inherit;
         }
 
-        .search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,121,62,.14); }
+        .search:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(232, 121, 62, .14);
+        }
 
         .category-nav {
             display: flex;
@@ -214,9 +248,15 @@
             transition: border-color .2s ease, color .2s ease;
         }
 
-        .category-pill:hover { border-color: var(--accent); color: var(--accent-dark); }
+        .category-pill:hover {
+            border-color: var(--accent);
+            color: var(--accent-dark);
+        }
 
-        .category { margin-top: 35px; scroll-margin-top: 20px; }
+        .category {
+            margin-top: 35px;
+            scroll-margin-top: 20px;
+        }
 
         .category-title {
             display: flex;
@@ -227,7 +267,12 @@
             letter-spacing: -.035em;
         }
 
-        .category-title::after { height: 1px; flex: 1; background: var(--line); content: ""; }
+        .category-title::after {
+            height: 1px;
+            flex: 1;
+            background: var(--line);
+            content: "";
+        }
 
         .menu-grid {
             display: grid;
@@ -244,9 +289,13 @@
             transition: transform .2s ease, box-shadow .2s ease;
         }
 
-        .menu-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+        .menu-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
 
-        .food-image, .food-placeholder {
+        .food-image,
+        .food-placeholder {
             display: block;
             width: 100%;
             height: 190px;
@@ -258,14 +307,21 @@
             display: grid;
             place-items: center;
             background:
-                radial-gradient(circle at 30% 25%, rgba(255,255,255,.76), transparent 28%),
+                radial-gradient(circle at 30% 25%, rgba(255, 255, 255, .76), transparent 28%),
                 linear-gradient(140deg, #f8d9bd, #f1e7c9 52%, #d7e5d1);
             font-size: 3.2rem;
         }
 
-        .card-content { padding: 17px 18px 18px; }
+        .card-content {
+            padding: 17px 18px 18px;
+        }
 
-        .card-title-row { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+        .card-title-row {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            gap: 12px;
+        }
 
         .card-title {
             margin: 0;
@@ -274,7 +330,12 @@
             letter-spacing: -.025em;
         }
 
-        .price { flex: 0 0 auto; color: var(--accent-dark); font-size: .98rem; font-weight: 800; }
+        .price {
+            flex: 0 0 auto;
+            color: var(--accent-dark);
+            font-size: .98rem;
+            font-weight: 800;
+        }
 
         .description {
             min-height: 42px;
@@ -284,10 +345,22 @@
             line-height: 1.55;
         }
 
-        .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
 
-        .availability { color: #38804b; font-size: .78rem; font-weight: 750; }
-        .availability.unavailable { color: #8a918b; }
+        .availability {
+            color: #38804b;
+            font-size: .78rem;
+            font-weight: 750;
+        }
+
+        .availability.unavailable {
+            color: #8a918b;
+        }
 
         .add-button {
             min-height: 38px;
@@ -303,8 +376,16 @@
             transition: background .2s ease;
         }
 
-        .add-button:hover { background: var(--accent-dark); }
-        .add-button:focus-visible, a:focus-visible, .search:focus-visible { outline: 3px solid #f1a47d; outline-offset: 3px; }
+        .add-button:hover {
+            background: var(--accent-dark);
+        }
+
+        .add-button:focus-visible,
+        a:focus-visible,
+        .search:focus-visible {
+            outline: 3px solid #f1a47d;
+            outline-offset: 3px;
+        }
 
         .empty-state {
             padding: 42px 24px;
@@ -314,38 +395,109 @@
             text-align: center;
         }
 
-        .empty-state strong { display: block; margin-bottom: 8px; color: var(--ink); font-size: 1.1rem; }
+        .empty-state strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--ink);
+            font-size: 1.1rem;
+        }
 
-        .no-results { display: none; padding: 28px 0; color: var(--muted); text-align: center; }
+        .no-results {
+            display: none;
+            padding: 28px 0;
+            color: var(--muted);
+            text-align: center;
+        }
 
-        footer { padding: 22px 0 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+        footer {
+            padding: 22px 0 32px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: .85rem;
+        }
 
         @media (max-width: 800px) {
-            .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .hero::after { right: -100px; }
+            .menu-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .hero::after {
+                right: -100px;
+            }
         }
 
         @media (max-width: 560px) {
-            .shell { width: min(100% - 28px, 1120px); }
-            .topbar { min-height: 70px; }
-            .nav { gap: 10px; }
-            .nav-link { display: none; }
-            .cart-link { min-height: 40px; padding: 0 13px; }
-            .hero { min-height: 320px; border-radius: 22px; }
-            .hero::after { right: -205px; opacity: .7; }
-            .menu-section { padding: 46px 0 55px; }
-            .section-heading { align-items: stretch; flex-direction: column; }
-            .search { width: 100%; }
-            .menu-grid { grid-template-columns: 1fr; gap: 14px; }
-            .food-image, .food-placeholder { height: 205px; }
-            .description { min-height: auto; }
+            .shell {
+                width: min(100% - 28px, 1120px);
+            }
+
+            .topbar {
+                min-height: 70px;
+            }
+
+            .nav {
+                gap: 10px;
+            }
+
+            .nav-link {
+                display: none;
+            }
+
+            .cart-link {
+                min-height: 40px;
+                padding: 0 13px;
+            }
+
+            .hero {
+                min-height: 320px;
+                border-radius: 22px;
+            }
+
+            .hero::after {
+                right: -205px;
+                opacity: .7;
+            }
+
+            .menu-section {
+                padding: 46px 0 55px;
+            }
+
+            .section-heading {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .search {
+                width: 100%;
+            }
+
+            .menu-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .food-image,
+            .food-placeholder {
+                height: 205px;
+            }
+
+            .description {
+                min-height: auto;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition-duration: .01ms !important;
+            }
         }
     </style>
 </head>
+
 <body>
     <header class="shell topbar">
         <a class="brand" href="{% url 'store:menu_list' %}">
@@ -376,66 +528,68 @@
                 </div>
                 <label>
                     <span class="sr-only" hidden>Search menu items</span>
-                    <input class="search" id="menu-search" type="search" placeholder="Search the menu..." autocomplete="off">
+                    <input class="search" id="menu-search" type="search" placeholder="Search the menu..."
+                        autocomplete="off">
                 </label>
             </div>
 
             {% if categories %}
-                <nav class="category-nav" aria-label="Menu categories">
-                    {% for category in categories %}
-                        <a class="category-pill" href="#category-{{ category.slug }}">{{ category.name }}</a>
-                    {% endfor %}
-                </nav>
-
+            <nav class="category-nav" aria-label="Menu categories">
                 {% for category in categories %}
-                    <section class="category" id="category-{{ category.slug }}" aria-labelledby="heading-{{ category.slug }}">
-                        <h3 class="category-title" id="heading-{{ category.slug }}">{{ category.name }}</h3>
-                        {% if category.items.all %}
-                            <div class="menu-grid">
-                                {% for item in category.items.all %}
-                                    <article class="menu-card" data-menu-item>
-                                        {% if item.image %}
-                                            <img class="food-image" src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
-                                        {% else %}
-                                            <div class="food-placeholder" aria-hidden="true">🍽️</div>
-                                        {% endif %}
-                                        <div class="card-content">
-                                            <div class="card-title-row">
-                                                <h4 class="card-title">{{ item.name }}</h4>
-                                                <span class="price">₦{{ item.price }}</span>
-                                            </div>
-                                            {% if item.description %}
-                                                <p class="description">{{ item.description }}</p>
-                                            {% else %}
-                                                <p class="description">Prepared fresh and ready to enjoy.</p>
-                                            {% endif %}
-                                            <div class="card-footer">
-                                                {% if item.is_available %}
-                                                    <span class="availability">● Available now</span>
-                                                    <form method="post" action="{% url 'store:cart_add' item.id %}">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="quantity" value="1">
-                                                        <button class="add-button" type="submit" aria-label="Add {{ item.name }} to cart">Add to cart +</button>
-                                                    </form>
-                                                {% else %}
-                                                    <span class="availability unavailable">Currently unavailable</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </article>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="empty-state">New dishes are coming soon.</div>
-                        {% endif %}
-                    </section>
+                <a class="category-pill" href="#category-{{ category.slug }}">{{ category.name }}</a>
                 {% endfor %}
-                <p class="no-results" id="no-results">No menu items match your search.</p>
-            {% else %}
-                <div class="empty-state">
-                    <strong>The menu is getting ready.</strong>
-                    Please check back soon for something delicious.
+            </nav>
+
+            {% for category in categories %}
+            <section class="category" id="category-{{ category.slug }}" aria-labelledby="heading-{{ category.slug }}">
+                <h3 class="category-title" id="heading-{{ category.slug }}">{{ category.name }}</h3>
+                {% if category.items.all %}
+                <div class="menu-grid">
+                    {% for item in category.items.all %}
+                    <article class="menu-card" data-menu-item>
+                        {% if item.image %}
+                        <img class="food-image" src="{{ item.image.url }}" alt="{{ item.name }}" loading="lazy">
+                        {% else %}
+                        <div class="food-placeholder" aria-hidden="true">🍽️</div>
+                        {% endif %}
+                        <div class="card-content">
+                            <div class="card-title-row">
+                                <h4 class="card-title">{{ item.name }}</h4>
+                                <span class="price">₦{{ item.price }}</span>
+                            </div>
+                            {% if item.description %}
+                            <p class="description">{{ item.description }}</p>
+                            {% else %}
+                            <p class="description">Prepared fresh and ready to enjoy.</p>
+                            {% endif %}
+                            <div class="card-footer">
+                                {% if item.is_available %}
+                                <span class="availability">● Available now</span>
+                                <form method="post" action="{% url 'store:cart_add' item.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button class="add-button" type="submit"
+                                        aria-label="Add {{ item.name }} to cart">Add to cart +</button>
+                                </form>
+                                {% else %}
+                                <span class="availability unavailable">Currently unavailable</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="empty-state">New dishes are coming soon.</div>
+                {% endif %}
+            </section>
+            {% endfor %}
+            <p class="no-results" id="no-results">No menu items match your search.</p>
+            {% else %}
+            <div class="empty-state">
+                <strong>The menu is getting ready.</strong>
+                Please check back soon for something delicious.
+            </div>
             {% endif %}
         </section>
     </main>
@@ -471,4 +625,5 @@
         }
     </script>
 </body>
+
 </html>
