@@ -2,7 +2,7 @@ asgiref==3.13.0
 certifi==2026.10.23
 charset-normalizer==3.5.2
 dj-database-url==3.1.2
-Django==4.2.30
+Django==5.2.18
 geographiclib==2.1
 geopy==2.5.0
 gunicorn==26.2.0
