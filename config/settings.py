@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-4@3(dj3my)(lj41&9cjmw63=^@!sag-)paz-*@%qwte3p48opa'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ['savory-kitchen.onrender.com', 'localhost', '127.0.0.1', '*']
 
 
