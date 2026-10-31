@@ -669,7 +669,11 @@
                         <span class="account-chevron" aria-hidden="true"></span>
                     </summary>
                     <div class="account-popover">
+                        <a href="{% url 'store:order_history' %}">My orders</a>
                         <a href="{% url 'address_list' %}">My addresses</a>
+                        {% if request.user.role == 'RIDER' %}
+                            <a href="{% url 'store:rider_dashboard' %}">Rider deliveries</a>
+                        {% endif %}
                         {% if request.user.is_staff or request.user.role == 'KITCHEN' or request.user.role == 'ADMIN' %}
                             <a href="{% url 'store:kitchen_dashboard' %}">Kitchen dashboard</a>
                             <a href="{% url 'store:menu_manage' %}">Manage menu</a>

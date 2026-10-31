@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Confirmed</title>
+    <title>Order | Savor Kitchen</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -49,17 +49,21 @@
 <body>
     <div class="container">
         <div class="card">
-            <div class="success">✅ Order placed successfully!</div>
-            <h1>Thank you for your order</h1>
+            <div class="success">Order update</div>
+            <h1>Thank you</h1>
 
             <div class="details">
                 <p><strong>Order ID:</strong> #{{ order.id }}</p>
                 <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+                {% if order.latest_payment %}
+                <p><strong>Payment:</strong> {{ order.latest_payment.get_status_display }}</p>
+                {% endif %}
                 <p><strong>Total Amount:</strong> ₦{{ order.total_amount }}</p>
                 <p><strong>Order Type:</strong> {{ order.get_order_type_display }}</p>
             </div>
 
-            <a class="button" href="{% url 'store:menu_list' %}">Back to menu</a>
+            <a class="button" href="{% url 'store:order_detail' order.id %}">Track this order</a>
+            <a class="button" href="{% url 'store:order_history' %}">My orders</a>
         </div>
     </div>
 </body>

@@ -387,19 +387,21 @@
             }
 
             .topbar {
+                flex-wrap: wrap;
                 min-height: 70px;
+                padding: 10px 0;
             }
 
             .top-actions {
-                gap: 12px;
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                gap: 8px 12px;
             }
 
             .top-actions a {
-                display: none;
-            }
-
-            .top-actions a.manage-menu-link {
                 display: inline;
+                font-size: .8rem;
             }
 
             .heading-row {
@@ -432,6 +434,15 @@
 
             .advance-button {
                 width: 100%;
+            }
+
+            .top-actions {
+                gap: 8px;
+            }
+
+            .top-actions a,
+            .logout-button {
+                font-size: .74rem;
             }
         }
 

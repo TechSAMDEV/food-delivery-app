@@ -13,3 +13,7 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
+      - key: FLUTTERWAVE_SECRET_KEY
+        sync: false
+      - key: FLUTTERWAVE_WEBHOOK_SECRET
+        sync: false

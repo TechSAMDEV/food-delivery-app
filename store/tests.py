@@ -1,10 +1,21 @@
 from decimal import Decimal
+import json
+from unittest.mock import patch
 
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from .models import Category, MenuItem, Order, OrderItem, StoreConfiguration
+from .models import (
+    Category,
+    MenuItem,
+    Order,
+    OrderItem,
+    OrderStatusHistory,
+    PaymentTransaction,
+    StoreConfiguration,
+)
 
 
 class MenuPageTests(TestCase):
@@ -231,12 +242,34 @@ class KitchenDashboardTests(TestCase):
         self.assertRedirects(response, reverse('store:kitchen_dashboard'))
         self.order.refresh_from_db()
         self.assertEqual(self.order.status, Order.Status.OUT_FOR_DELIVERY)
+        self.assertEqual(
+            list(self.order.status_history.values_list('status', flat=True)),
+            [Order.Status.PREPARING, Order.Status.OUT_FOR_DELIVERY],
+        )
 
     def test_invalid_status_jump_does_not_change_order(self):
         self.client.force_login(self.kitchen_user)
         response = self.client.post(
             reverse('store:update_order_status', args=[self.order.id]),
             {'status': Order.Status.OUT_FOR_DELIVERY},
+            follow=True,
+        )
+
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.Status.PENDING)
+        self.assertContains(response, 'That status change is not allowed.', status_code=200)
+
+    def test_kitchen_cannot_advance_order_with_unpaid_payment(self):
+        PaymentTransaction.objects.create(
+            order=self.order,
+            reference='unpaid-kitchen-order',
+            amount=self.order.total_amount,
+        )
+        self.client.force_login(self.kitchen_user)
+
+        response = self.client.post(
+            reverse('store:update_order_status', args=[self.order.id]),
+            {'status': Order.Status.PREPARING},
             follow=True,
         )
 
@@ -332,6 +365,7 @@ class AccountAddressTests(TestCase):
         self.customer = get_user_model().objects.create_user(
             username='customer',
             password='customer-password',
+            email='customer@example.com',
         )
 
     def test_customer_can_add_address_and_it_becomes_default(self):
@@ -550,6 +584,101 @@ class StaffMenuManagerTests(TestCase):
         self.assertEqual(item.price, Decimal('2800.00'))
         self.assertFalse(item.is_available)
 
+    def test_kitchen_staff_can_remove_a_dish_without_order_history(self):
+        item = MenuItem.objects.create(
+            category=self.category,
+            name='Temporary special',
+            price='1200.00',
+        )
+        self.client.force_login(self.kitchen_user)
+
+        response = self.client.post(
+            reverse('store:menu_item_delete', args=[item.id]),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse('store:menu_manage'))
+        item.refresh_from_db()
+        self.assertTrue(item.is_archived)
+        self.assertFalse(item.is_available)
+        self.assertContains(response, 'was removed from the menu.')
+        self.assertNotContains(
+            self.client.get(reverse('store:menu_list')),
+            'Temporary special',
+        )
+
+        restore_response = self.client.post(
+            reverse('store:menu_item_delete', args=[item.id]),
+            follow=True,
+        )
+        item.refresh_from_db()
+        self.assertFalse(item.is_archived)
+        self.assertFalse(item.is_available)
+        self.assertContains(restore_response, 'was restored to the menu.')
+
+    def test_removing_a_dish_keeps_its_order_history_unchanged(self):
+        customer = get_user_model().objects.create_user(username='order-customer')
+        order = Order.objects.create(
+            customer=customer,
+            order_type=Order.OrderType.PICKUP,
+            subtotal='1200.00',
+            delivery_fee='0.00',
+            total_amount='1200.00',
+        )
+        item = MenuItem.objects.create(
+            category=self.category,
+            name='Past special',
+            price='1200.00',
+        )
+        OrderItem.objects.create(
+            order=order,
+            menu_item=item,
+            quantity=1,
+            unit_price='1200.00',
+        )
+        self.client.force_login(self.kitchen_user)
+
+        response = self.client.post(
+            reverse('store:menu_item_delete', args=[item.id]),
+            follow=True,
+        )
+
+        order_item = order.items.get()
+        item.refresh_from_db()
+        self.assertTrue(item.is_archived)
+        self.assertEqual(order_item.menu_item, item)
+        self.assertEqual(order_item.item_name, 'Past special')
+        self.assertContains(response, 'Previous orders remain unchanged.')
+
+        self.client.force_login(customer)
+        history_response = self.client.get(
+            reverse('store:order_detail', args=[order.id]),
+        )
+        self.assertContains(history_response, '1 × Past special')
+
+    def test_customers_cannot_delete_dishes(self):
+        item = MenuItem.objects.create(
+            category=self.category,
+            name='Protected dish',
+            price='1200.00',
+        )
+        self.client.force_login(self.customer)
+
+        response = self.client.post(reverse('store:menu_item_delete', args=[item.id]))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(MenuItem.objects.filter(pk=item.pk).exists())
+
+    def test_kitchen_navigation_keeps_links_visible_on_small_screens(self):
+        self.client.force_login(self.kitchen_user)
+
+        response = self.client.get(reverse('store:kitchen_dashboard'))
+
+        self.assertContains(response, 'View menu')
+        self.assertContains(response, 'Manage menu')
+        self.assertContains(response, 'flex-wrap: wrap')
+        self.assertNotContains(response, '.top-actions a {\n                display: none;')
+
     def test_menu_item_price_must_be_greater_than_zero(self):
         self.client.force_login(self.kitchen_user)
 
@@ -574,6 +703,7 @@ class CartAndCheckoutTests(TestCase):
         self.customer = get_user_model().objects.create_user(
             username='customer',
             password='customer-password',
+            email='customer@example.com',
         )
         self.category = Category.objects.create(name='Mains', slug='mains')
         self.item = MenuItem.objects.create(
@@ -634,20 +764,28 @@ class CartAndCheckoutTests(TestCase):
         self.item.price = Decimal('3000.00')
         self.item.save(update_fields=['price'])
 
-        response = self.client.post(
-            reverse('store:checkout'),
-            {'order_type': Order.OrderType.PICKUP},
-        )
+        with patch(
+            'store.views.initialize_payment',
+            return_value='https://checkout.flutterwave.com/v3/hosted/pay/example',
+        ):
+            response = self.client.post(
+                reverse('store:checkout'),
+                {'order_type': Order.OrderType.PICKUP},
+            )
 
         order = Order.objects.get(customer=self.customer)
-        self.assertRedirects(
-            response,
-            reverse('store:order_success', args=[order.id]),
-        )
+        self.assertRedirects(response, 'https://checkout.flutterwave.com/v3/hosted/pay/example', fetch_redirect_response=False)
         self.assertEqual(order.subtotal, Decimal('6000.00'))
         self.assertEqual(order.delivery_fee, Decimal('0.00'))
         self.assertEqual(order.total_amount, Decimal('6000.00'))
         self.assertEqual(order.items.get().unit_price, Decimal('3000.00'))
+        self.assertEqual(order.items.get().item_name, 'Jollof rice')
+        self.assertEqual(order.status, Order.Status.PENDING)
+        self.assertEqual(order.payment_transactions.get().status, PaymentTransaction.PaymentStatus.PENDING)
+        self.assertEqual(
+            list(order.status_history.values_list('status', flat=True)),
+            [Order.Status.PENDING],
+        )
         self.assertEqual(self.client.session.get('cart', {}), {})
 
     def test_delivery_checkout_requires_customer_saved_address(self):
@@ -695,13 +833,17 @@ class CartAndCheckoutTests(TestCase):
         self.assertContains(preview, '₦500.00')
         self.assertContains(preview, '₦3000.00')
 
-        response = self.client.post(
-            reverse('store:checkout'),
-            {
-                'order_type': Order.OrderType.DELIVERY,
-                'address_id': str(address.id),
-            },
-        )
+        with patch(
+            'store.views.initialize_payment',
+            return_value='https://checkout.flutterwave.com/v3/hosted/pay/example',
+        ):
+            response = self.client.post(
+                reverse('store:checkout'),
+                {
+                    'order_type': Order.OrderType.DELIVERY,
+                    'address_id': str(address.id),
+                },
+            )
 
         order = Order.objects.get(customer=self.customer)
         expected_fee, _, is_valid = store.calculate_delivery_fee(
@@ -712,7 +854,7 @@ class CartAndCheckoutTests(TestCase):
         self.assertEqual(order.delivery_fee, Decimal(str(expected_fee)))
         self.assertEqual(order.delivery_address, address)
         self.assertEqual(order.total_amount, Decimal('3000.00'))
-        self.assertRedirects(response, reverse('store:order_success', args=[order.id]))
+        self.assertRedirects(response, 'https://checkout.flutterwave.com/v3/hosted/pay/example', fetch_redirect_response=False)
 
     def test_delivery_checkout_rejects_addresses_outside_delivery_radius(self):
         StoreConfiguration.objects.create(
@@ -744,3 +886,283 @@ class CartAndCheckoutTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Selected address is out of delivery range.')
         self.assertFalse(Order.objects.filter(customer=self.customer).exists())
+
+    def test_customer_can_retry_an_unpaid_order(self):
+        order = Order.objects.create(
+            customer=self.customer,
+            order_type=Order.OrderType.PICKUP,
+            subtotal=Decimal('2500.00'),
+            delivery_fee=Decimal('0.00'),
+            total_amount=Decimal('2500.00'),
+            status=Order.Status.PENDING,
+        )
+
+        with patch(
+            'store.views.initialize_payment',
+            return_value='https://checkout.flutterwave.com/v3/hosted/pay/retry',
+        ):
+            response = self.client.post(reverse('store:retry_order_payment', args=[order.id]))
+
+        self.assertRedirects(
+            response,
+            'https://checkout.flutterwave.com/v3/hosted/pay/retry',
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(order.payment_transactions.count(), 1)
+
+
+class CustomerOrderTrackingTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.customer = User.objects.create_user(
+            username='customer',
+            password='customer-password',
+            email='customer@example.com',
+        )
+        self.other_customer = User.objects.create_user(
+            username='other-customer',
+            password='other-password',
+            email='other@example.com',
+        )
+        self.order = Order.objects.create(
+            customer=self.customer,
+            order_type=Order.OrderType.PICKUP,
+            subtotal=Decimal('2500.00'),
+            delivery_fee=Decimal('0.00'),
+            total_amount=Decimal('2500.00'),
+            status=Order.Status.PREPARING,
+        )
+        OrderStatusHistory.objects.create(
+            order=self.order,
+            status=Order.Status.PENDING,
+        )
+        OrderStatusHistory.objects.create(
+            order=self.order,
+            status=Order.Status.PREPARING,
+        )
+
+    def test_customer_sees_only_their_own_orders(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse('store:order_history'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'Order #{self.order.id}')
+        self.assertEqual(len(response.context['orders']), 1)
+
+    def test_customer_can_view_timeline_and_poll_status(self):
+        self.client.force_login(self.customer)
+        detail = self.client.get(reverse('store:order_detail', args=[self.order.id]))
+        tracking = self.client.get(reverse('store:order_tracking_status', args=[self.order.id]))
+
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, 'Preparing in Kitchen')
+        self.assertContains(detail, 'This page checks for updates automatically.')
+        self.assertEqual(tracking.status_code, 200)
+        self.assertEqual(tracking.json()['status'], Order.Status.PREPARING)
+        self.assertEqual(len(tracking.json()['events']), 2)
+
+    def test_customer_cannot_view_another_customers_order_or_tracking(self):
+        self.client.force_login(self.other_customer)
+
+        self.assertEqual(
+            self.client.get(reverse('store:order_detail', args=[self.order.id])).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.get(reverse('store:order_tracking_status', args=[self.order.id])).status_code,
+            404,
+        )
+
+
+class RiderDeliveryTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.customer = User.objects.create_user(
+            username='customer',
+            password='customer-password',
+            email='customer@example.com',
+        )
+        self.rider = User.objects.create_user(
+            username='rider',
+            password='rider-password',
+            role=User.Role.RIDER,
+        )
+        self.other_rider = User.objects.create_user(
+            username='other-rider',
+            password='other-rider-password',
+            role=User.Role.RIDER,
+        )
+        self.order = Order.objects.create(
+            customer=self.customer,
+            order_type=Order.OrderType.DELIVERY,
+            subtotal=Decimal('2500.00'),
+            delivery_fee=Decimal('500.00'),
+            total_amount=Decimal('3000.00'),
+            status=Order.Status.OUT_FOR_DELIVERY,
+            assigned_rider=self.rider,
+        )
+
+    def test_assigned_rider_can_view_and_complete_delivery(self):
+        self.client.force_login(self.rider)
+        dashboard = self.client.get(reverse('store:rider_dashboard'))
+        response = self.client.post(
+            reverse('store:rider_mark_delivered', args=[self.order.id]),
+        )
+
+        self.order.refresh_from_db()
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertContains(dashboard, 'customer')
+        self.assertRedirects(response, reverse('store:rider_dashboard'))
+        self.assertEqual(self.order.status, Order.Status.DELIVERED)
+        self.assertEqual(
+            self.order.status_history.order_by('-changed_at').first().changed_by,
+            self.rider,
+        )
+
+    def test_rider_cannot_complete_another_riders_order(self):
+        self.client.force_login(self.other_rider)
+
+        response = self.client.post(
+            reverse('store:rider_mark_delivered', args=[self.order.id]),
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.Status.OUT_FOR_DELIVERY)
+
+    def test_customers_cannot_open_rider_dashboard(self):
+        self.client.force_login(self.customer)
+        self.assertEqual(self.client.get(reverse('store:rider_dashboard')).status_code, 403)
+
+    def test_admin_can_assign_an_order_to_a_rider(self):
+        admin_user = get_user_model().objects.create_user(
+            username='admin',
+            password='admin-password',
+            role='ADMIN',
+            is_staff=True,
+        )
+        self.client.force_login(admin_user)
+        change_url = reverse('admin:store_order_change', args=[self.order.id])
+
+        page = self.client.get(change_url)
+        response = self.client.post(
+            change_url,
+            {'assigned_rider': str(self.other_rider.id), '_save': 'Save'},
+        )
+
+        self.order.refresh_from_db()
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, self.other_rider.username)
+        self.assertRedirects(response, reverse('admin:store_order_changelist'))
+        self.assertEqual(self.order.assigned_rider, self.other_rider)
+
+
+class FlutterwavePaymentTests(TestCase):
+    def setUp(self):
+        self.customer = get_user_model().objects.create_user(
+            username='customer',
+            password='customer-password',
+            email='customer@example.com',
+        )
+        self.order = Order.objects.create(
+            customer=self.customer,
+            order_type=Order.OrderType.PICKUP,
+            subtotal=Decimal('2500.00'),
+            delivery_fee=Decimal('0.00'),
+            total_amount=Decimal('2500.00'),
+            status=Order.Status.PENDING,
+        )
+        self.payment = PaymentTransaction.objects.create(
+            order=self.order,
+            reference='savor-test-reference',
+            amount=self.order.total_amount,
+        )
+
+    @override_settings(FLUTTERWAVE_WEBHOOK_SECRET='test-webhook-secret')
+    @patch('store.views.verify_payment', return_value=True)
+    def test_webhook_requires_secret_hash_and_verifies_transaction(self, verify_mock):
+        payload = {
+            'event': 'charge.completed',
+            'data': {'id': 12345, 'tx_ref': self.payment.reference},
+        }
+        response = self.client.post(
+            reverse('store:payment_webhook'),
+            data=json.dumps(payload),
+            content_type='application/json',
+            HTTP_VERIF_HASH='test-webhook-secret',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        verify_mock.assert_called_once_with(self.payment, 12345)
+
+    @override_settings(FLUTTERWAVE_WEBHOOK_SECRET='test-webhook-secret')
+    def test_webhook_rejects_invalid_secret_hash(self):
+        response = self.client.post(
+            reverse('store:payment_webhook'),
+            data='{}',
+            content_type='application/json',
+            HTTP_VERIF_HASH='wrong-secret',
+        )
+        self.assertEqual(response.status_code, 401)
+
+    @override_settings(FLUTTERWAVE_SECRET_KEY='test-secret-key')
+    @patch(
+        'store.payments.requests.post',
+        return_value=type(
+            'Response',
+            (),
+            {
+                'raise_for_status': lambda self: None,
+                'json': lambda self: {
+                    'status': 'success',
+                    'data': {'link': 'https://checkout.flutterwave.com/v3/hosted/pay/example'},
+                },
+            },
+        )(),
+    )
+    def test_payment_initialization_uses_configured_bearer_key(self, request_mock):
+        from .payments import initialize_payment
+
+        link = initialize_payment(self.payment, 'https://example.com/payments/callback/')
+
+        self.assertEqual(link, 'https://checkout.flutterwave.com/v3/hosted/pay/example')
+        self.assertEqual(
+            request_mock.call_args.kwargs['headers']['Authorization'],
+            'Bearer test-secret-key',
+        )
+
+    @override_settings(FLUTTERWAVE_SECRET_KEY='test-secret-key')
+    @patch(
+        'store.payments.requests.get',
+        return_value=type(
+            'Response',
+            (),
+            {
+                'raise_for_status': lambda self: None,
+                'json': lambda self: {
+                    'status': 'success',
+                    'data': {
+                        'id': 12345,
+                        'tx_ref': 'savor-test-reference',
+                        'status': 'successful',
+                        'currency': 'NGN',
+                        'amount': '2500.00',
+                    },
+                },
+            },
+        )(),
+    )
+    def test_server_verification_marks_payment_successful_and_queues_order(self, request_mock):
+        from .payments import verify_payment
+
+        self.assertTrue(verify_payment(self.payment, '12345'))
+        self.assertEqual(
+            request_mock.call_args.kwargs['headers']['Authorization'],
+            'Bearer test-secret-key',
+        )
+
+        self.payment.refresh_from_db()
+        self.order.refresh_from_db()
+        self.assertEqual(self.payment.status, PaymentTransaction.PaymentStatus.SUCCESSFUL)
+        self.assertEqual(self.order.status, Order.Status.PREPARING)
+        self.assertEqual(self.order.status_history.get().status, Order.Status.PREPARING)

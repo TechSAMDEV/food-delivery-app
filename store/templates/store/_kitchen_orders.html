@@ -21,7 +21,7 @@
                 <div class="items">
                     {% for item in order.items.all %}
                     <div class="item">
-                        <span class="item-name">{{ item.quantity }} × {{ item.menu_item.name }}</span>
+                        <span class="item-name">{{ item.quantity }} × {{ item.item_name }}</span>
                         <span class="item-price">₦{{ item.get_total|floatformat:2 }}</span>
                     </div>
                     {% empty %}
@@ -77,12 +77,13 @@
         </div>
         {% elif order.status == 'OUT_FOR_DELIVERY' %}
         <div class="order-actions">
-            <span class="action-hint">Confirm once the order has reached the customer.</span>
-            <form method="post" action="{% url 'store:update_order_status' order.id %}">
-                {% csrf_token %}
-                <input type="hidden" name="status" value="DELIVERED">
-                <button class="advance-button" type="submit">Mark delivered <span aria-hidden="true">✓</span></button>
-            </form>
+            <span class="action-hint">
+                {% if order.assigned_rider %}
+                    Assigned to {{ order.assigned_rider.get_full_name|default:order.assigned_rider.username }}. The rider confirms delivery from their dashboard.
+                {% else %}
+                    Assign a rider to this order in Django admin.
+                {% endif %}
+            </span>
         </div>
         {% endif %}
     </article>

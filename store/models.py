@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.utils import timezone
 
 from django.db import models
 from django.conf import settings
@@ -56,6 +57,7 @@ class MenuItem(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     image = models.ImageField(upload_to='menu_items/', blank=True, null=True)
     is_available = models.BooleanField(default=True)
+    is_archived = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -79,6 +81,14 @@ class Order(models.Model):
 
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='orders')
     delivery_address = models.ForeignKey('accounts.UserAddress', on_delete=models.SET_NULL, null=True, blank=True)
+    assigned_rider = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_deliveries',
+        limit_choices_to={'role': 'RIDER'},
+    )
     order_type = models.CharField(max_length=10, choices=OrderType.choices, default=OrderType.DELIVERY)
     
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
@@ -92,19 +102,43 @@ class Order(models.Model):
     def __str__(self):
         return f"Order #{self.id} - {self.customer.username} ({self.status})"
 
+    @property
+    def latest_payment(self):
+        if hasattr(self, '_prefetched_objects_cache') and 'payment_transactions' in self._prefetched_objects_cache:
+            payments = self._prefetched_objects_cache['payment_transactions']
+            return payments[0] if payments else None
+        return self.payment_transactions.order_by('-created_at').first()
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    menu_item = models.ForeignKey(MenuItem, on_delete=models.PROTECT)
+    menu_item = models.ForeignKey(
+        MenuItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    menu_item_name = models.CharField(max_length=150, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        if self.menu_item and not self.menu_item_name:
+            self.menu_item_name = self.menu_item.name
+        super().save(*args, **kwargs)
+
+    @property
+    def item_name(self):
+        return self.menu_item_name or (
+            self.menu_item.name if self.menu_item else 'Deleted dish'
+        )
 
     @property
     def get_total(self):
         return self.quantity * self.unit_price
 
     def __str__(self):
-        return f"{self.quantity}x {self.menu_item.name} for Order #{self.order.id}"
+        return f"{self.quantity}x {self.item_name} for Order #{self.order.id}"
 
 
 class PaymentTransaction(models.Model):
@@ -113,11 +147,31 @@ class PaymentTransaction(models.Model):
         SUCCESSFUL = 'SUCCESSFUL', 'Successful'
         FAILED = 'FAILED', 'Failed'
 
-    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment_transactions')
     reference = models.CharField(max_length=100, unique=True)
+    provider_transaction_id = models.CharField(max_length=100, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Tx {self.reference} - {self.status}"
+
+
+class OrderStatusHistory(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='status_history')
+    status = models.CharField(max_length=20, choices=Order.Status.choices)
+    changed_at = models.DateTimeField(default=timezone.now)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='order_status_changes',
+    )
+
+    class Meta:
+        ordering = ('changed_at', 'pk')
+
+    def __str__(self):
+        return f"Order #{self.order_id}: {self.get_status_display()}"

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rider deliveries | Savor Kitchen</title>
+    <style>
+        :root { --ink: #17251d; --muted: #718078; --paper: #f5f6f1; --line: #e7ebe4; --accent: #e8793e; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--paper); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+        a { color: inherit; }
+        .shell { width: min(900px, calc(100% - 32px)); margin: 0 auto; }
+        header { display: flex; min-height: 76px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+        header a { font-weight: 750; text-decoration: none; }
+        main { padding: 38px 0 64px; }
+        h1 { margin: 0; font-size: clamp(2rem, 5vw, 2.7rem); letter-spacing: -.06em; }
+        h2 { margin: 0 0 14px; font-size: 1rem; }
+        .intro { margin: 8px 0 24px; color: var(--muted); }
+        .orders { display: grid; gap: 14px; }
+        .order { padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: white; }
+        .top { display: flex; justify-content: space-between; gap: 12px; }
+        .badge { padding: 7px 10px; border-radius: 999px; background: #fff3e9; color: #9c4c22; font-size: .8rem; font-weight: 800; }
+        .meta { margin: 5px 0 0; color: var(--muted); font-size: .87rem; }
+        .items { display: grid; gap: 6px; margin: 16px 0; color: #536158; font-size: .88rem; }
+        .button { display: inline-flex; padding: 11px 14px; border: 0; border-radius: 10px; background: var(--ink); color: white; cursor: pointer; font: inherit; font-size: .84rem; font-weight: 750; }
+        .empty { padding: 44px 20px; border: 1px dashed #cbd4ca; border-radius: 16px; background: white; color: var(--muted); text-align: center; }
+        .alerts { display: grid; gap: 8px; margin-bottom: 16px; }
+        .alert { padding: 11px 13px; border-radius: 10px; background: #f2f4ef; color: #46564b; font-size: .88rem; }
+    </style>
+</head>
+<body>
+    <header class="shell">
+        <a href="{% url 'store:menu_list' %}">Savor Kitchen</a>
+        <a href="{% url 'store:menu_list' %}">Home</a>
+    </header>
+    <main class="shell">
+        <h1>Your deliveries</h1>
+        <p class="intro">Orders assigned to you by a restaurant administrator.</p>
+        <div class="alerts">{% for message in messages %}<div class="alert" role="status">{{ message }}</div>{% endfor %}</div>
+        {% if orders %}
+        <section class="orders">
+            {% for order in orders %}
+            <article class="order">
+                <div class="top">
+                    <div><strong>Order #{{ order.id }}</strong><p class="meta">Received {{ order.created_at|date:"d M Y, H:i" }}</p></div>
+                    <span class="badge">{{ order.get_status_display }}</span>
+                </div>
+                <h2>Deliver to {{ order.customer.get_full_name|default:order.customer.username }}</h2>
+                {% if order.delivery_address %}
+                <p class="meta">{{ order.delivery_address.address_line }}, {{ order.delivery_address.city }}</p>
+                {% else %}
+                <p class="meta">No delivery address is recorded. Contact the restaurant before delivery.</p>
+                {% endif %}
+                <div class="items">
+                    {% for item in order.items.all %}<div>{{ item.quantity }} × {{ item.item_name }}</div>{% endfor %}
+                </div>
+                {% if order.status == 'OUT_FOR_DELIVERY' %}
+                <form method="post" action="{% url 'store:rider_mark_delivered' order.id %}">
+                    {% csrf_token %}
+                    <button class="button" type="submit">Confirm delivery</button>
+                </form>
+                {% else %}
+                <p class="meta">Delivery completed {{ order.updated_at|date:"d M Y, H:i" }}.</p>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </section>
+        {% else %}
+        <div class="empty"><strong>No deliveries are assigned to you.</strong><p>Ask an administrator to assign an order from Django admin.</p></div>
+        {% endif %}
+    </main>
+</body>
+</html>

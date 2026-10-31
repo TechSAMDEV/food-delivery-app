@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Order #{{ order.id }} | Savor Kitchen</title>
+    <style>
+        :root { --ink: #17251d; --muted: #718078; --paper: #f5f6f1; --line: #e7ebe4; --accent: #e8793e; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--paper); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+        a { color: inherit; }
+        .shell { width: min(900px, calc(100% - 32px)); margin: 0 auto; }
+        header { display: flex; min-height: 76px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+        header a { font-weight: 750; text-decoration: none; }
+        main { padding: 38px 0 64px; }
+        h1 { margin: 0; font-size: clamp(2rem, 5vw, 2.7rem); letter-spacing: -.06em; }
+        h2 { margin: 0 0 16px; font-size: 1.05rem; }
+        .intro { margin: 8px 0 24px; color: var(--muted); }
+        .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; align-items: start; }
+        .card { padding: 21px; border: 1px solid var(--line); border-radius: 16px; background: white; }
+        .status { display: inline-flex; padding: 8px 11px; border-radius: 999px; background: #fff3e9; color: #9c4c22; font-size: .82rem; font-weight: 800; }
+        .meta { color: var(--muted); font-size: .86rem; }
+        .timeline { display: grid; gap: 0; margin: 8px 0 0; padding: 0; list-style: none; }
+        .timeline li { position: relative; padding: 0 0 20px 25px; border-left: 2px solid var(--line); }
+        .timeline li:last-child { padding-bottom: 0; border-left-color: transparent; }
+        .timeline li::before { position: absolute; top: 2px; left: -7px; width: 10px; height: 10px; border: 2px solid white; border-radius: 50%; background: var(--accent); content: ""; }
+        .timeline time { display: block; margin-top: 4px; color: var(--muted); font-size: .78rem; }
+        .items { display: grid; gap: 12px; }
+        .item { display: flex; justify-content: space-between; gap: 12px; color: #536158; font-size: .88rem; }
+        .totals { display: grid; gap: 10px; margin-top: 17px; padding-top: 14px; border-top: 1px solid var(--line); }
+        .total { display: flex; justify-content: space-between; font-weight: 850; }
+        .notice { margin: 0 0 16px; padding: 12px; border-radius: 10px; background: #f2f4ef; color: #46564b; font-size: .88rem; }
+        .button { display: inline-flex; justify-content: center; padding: 11px 14px; border: 0; border-radius: 10px; background: var(--ink); color: white; cursor: pointer; font: inherit; font-size: .84rem; font-weight: 750; text-decoration: none; }
+        .button:hover { background: #294333; }
+        .alerts { display: grid; gap: 8px; margin-bottom: 16px; }
+        .alert { padding: 11px 13px; border-radius: 10px; background: #fff3f1; color: #943d35; font-size: .88rem; }
+        @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="shell">
+        <a href="{% url 'store:menu_list' %}">Savor Kitchen</a>
+        <a href="{% url 'store:order_history' %}">My orders</a>
+    </header>
+    <main class="shell">
+        <h1>Order #{{ order.id }}</h1>
+        <p class="intro">{{ order.created_at|date:"d M Y, H:i" }} · {{ order.get_order_type_display }}</p>
+        <div class="alerts">
+            {% for message in messages %}<div class="alert" role="alert">{{ message }}</div>{% endfor %}
+        </div>
+        <div class="grid">
+            <section class="card">
+                <h2>Order progress</h2>
+                <p><span class="status" id="order-status">{{ order.get_status_display }}</span></p>
+                {% if order.status == 'PENDING' %}
+                    <p class="notice">Payment is not confirmed yet. The kitchen will receive the order after Flutterwave verifies payment.</p>
+                    <form method="post" action="{% url 'store:retry_order_payment' order.id %}">
+                        {% csrf_token %}
+                        <button class="button" type="submit">Continue to payment</button>
+                    </form>
+                {% elif order.status == 'OUT_FOR_DELIVERY' %}
+                    <p class="notice">Your order is on its way{% if order.assigned_rider %} with {{ order.assigned_rider.get_full_name|default:order.assigned_rider.username }}{% endif %}.</p>
+                {% endif %}
+                <p class="meta">Payment: <span id="payment-status">{% if order.latest_payment %}{{ order.latest_payment.get_status_display }}{% else %}Not recorded{% endif %}</span></p>
+                <ul class="timeline" id="order-timeline">
+                    {% for event in order.status_history.all %}
+                    <li>
+                        <strong>{{ event.get_status_display }}</strong>
+                        <time>{{ event.changed_at|date:"d M Y, H:i" }}</time>
+                    </li>
+                    {% empty %}
+                    <li><strong>{{ order.get_status_display }}</strong><time>{{ order.updated_at|date:"d M Y, H:i" }}</time></li>
+                    {% endfor %}
+                </ul>
+                <p class="meta" id="last-updated">Last updated {{ order.updated_at|date:"d M Y, H:i" }}. This page checks for updates automatically.</p>
+            </section>
+            <aside class="card">
+                <h2>Items and total</h2>
+                <div class="items">
+                    {% for item in order.items.all %}
+                    <div class="item"><span>{{ item.quantity }} × {{ item.item_name }}</span><span>₦{{ item.get_total|floatformat:2 }}</span></div>
+                    {% endfor %}
+                </div>
+                <div class="totals">
+                    <div class="item"><span>Subtotal</span><span>₦{{ order.subtotal|floatformat:2 }}</span></div>
+                    {% if order.order_type == 'DELIVERY' %}
+                    <div class="item"><span>Delivery</span><span>₦{{ order.delivery_fee|floatformat:2 }}</span></div>
+                    {% endif %}
+                    <div class="total"><span>Total</span><span>₦{{ order.total_amount|floatformat:2 }}</span></div>
+                </div>
+                {% if order.delivery_address %}
+                <p class="meta">Delivery to: {{ order.delivery_address.address_line }}, {{ order.delivery_address.city }}</p>
+                {% endif %}
+            </aside>
+        </div>
+    </main>
+    <script>
+        const trackingUrl = "{% url 'store:order_tracking_status' order.id %}";
+        let lastUpdated = "{{ order.updated_at|date:'c' }}";
+        window.setInterval(async () => {
+            try {
+                const response = await fetch(trackingUrl, { headers: { Accept: 'application/json' } });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.updated_at !== lastUpdated) window.location.reload();
+            } catch (error) {
+                console.error('Could not refresh order tracking.', error);
+            }
+        }, 15000);
+    </script>
+</body>
+</html>

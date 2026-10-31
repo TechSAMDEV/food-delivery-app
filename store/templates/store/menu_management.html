@@ -33,7 +33,7 @@
         h2 { margin: 0; font-size: 1rem; letter-spacing: -.02em; }
         .count { color: var(--muted); font-size: .78rem; font-weight: 650; }
         .item-list { display: grid; }
-        .item-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid #f0f1ed; }
+        .item-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto auto auto; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid #f0f1ed; }
         .item-row:last-child { border-bottom: 0; }
         .item-image { width: 58px; height: 58px; border-radius: 12px; object-fit: cover; background: linear-gradient(140deg, #f8d9bd, #f1e7c9 52%, #d7e5d1); }
         .image-placeholder { display: grid; place-items: center; font-size: 1.5rem; }
@@ -44,6 +44,10 @@
         .status.unavailable { background: #f0f1ed; color: #707a72; }
         .edit-link { color: #b75328; font-size: .82rem; font-weight: 750; text-decoration: none; white-space: nowrap; }
         .edit-link:hover { text-decoration: underline; }
+        .item-actions { display: flex; align-items: center; gap: 12px; }
+        .delete-form { margin: 0; }
+        .delete-button { padding: 0; border: 0; background: transparent; color: #943d35; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 750; white-space: nowrap; }
+        .delete-button:hover { text-decoration: underline; }
         .side { display: grid; gap: 18px; }
         .category-list { display: grid; gap: 8px; padding: 14px 18px; }
         .category-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #405047; font-size: .85rem; }
@@ -61,9 +65,9 @@
         @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } .side { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
         @media (max-width: 600px) {
             .shell { width: min(100% - 28px, 1160px); }
-            .topbar { min-height: 68px; }
-            .nav { gap: 12px; }
-            .nav a { font-size: .79rem; }
+            .topbar { flex-wrap: wrap; padding: 10px 0; }
+            .nav { flex-wrap: wrap; justify-content: flex-end; gap: 8px 12px; }
+            .nav a { font-size: .77rem; }
             .main { padding-top: 28px; }
             .heading { align-items: flex-start; flex-direction: column; }
             .side { grid-template-columns: 1fr; }
@@ -71,7 +75,7 @@
             .item-image { width: 48px; height: 48px; }
             .item-price { grid-column: 2; grid-row: 2; justify-self: start; }
             .status { grid-column: 3; grid-row: 1; }
-            .edit-link { grid-column: 3; grid-row: 2; justify-self: end; }
+            .item-actions { grid-column: 3; grid-row: 2; justify-self: end; }
         }
     </style>
 </head>
@@ -128,7 +132,13 @@
                                 <span class="status {% if not item.is_available %}unavailable{% endif %}">
                                     {% if item.is_available %}Available{% else %}Unavailable{% endif %}
                                 </span>
-                                <a class="edit-link" href="{% url 'store:menu_item_edit' item.id %}">Edit</a>
+                                <div class="item-actions">
+                                    <a class="edit-link" href="{% url 'store:menu_item_edit' item.id %}">Edit</a>
+                                    <form class="delete-form" method="post" action="{% url 'store:menu_item_delete' item.id %}" onsubmit="return confirm('Remove {{ item.name|escapejs }} from the menu? Previous orders will be preserved.');">
+                                        {% csrf_token %}
+                                        <button class="delete-button" type="submit">Delete</button>
+                                    </form>
+                                </div>
                             </article>
                         {% endfor %}
                     </div>
@@ -139,6 +149,31 @@
                     </div>
                 {% endif %}
             </section>
+
+            {% if archived_items %}
+            <section class="panel" aria-labelledby="removed-dishes-heading">
+                <div class="panel-heading">
+                    <h2 id="removed-dishes-heading">Removed dishes</h2>
+                    <span class="count">{{ archived_items|length }} removed</span>
+                </div>
+                <div class="item-list">
+                    {% for item in archived_items %}
+                    <article class="item-row">
+                        <div class="item-image image-placeholder" aria-hidden="true">🍽️</div>
+                        <div>
+                            <h3 class="item-name">{{ item.name }}</h3>
+                            <div class="item-category">{{ item.category.name }} · ₦{{ item.price }}</div>
+                        </div>
+                        <span class="status unavailable">Removed</span>
+                        <form class="item-actions" method="post" action="{% url 'store:menu_item_delete' item.id %}">
+                            {% csrf_token %}
+                            <button class="edit-link" type="submit">Restore</button>
+                        </form>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
 
             <aside class="side">
                 <section class="panel" aria-labelledby="categories-heading">

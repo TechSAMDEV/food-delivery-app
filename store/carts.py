@@ -58,7 +58,7 @@ class Cart:
         ]
         menu_items = {
             str(item.id): item
-            for item in MenuItem.objects.filter(id__in=item_ids)
+            for item in MenuItem.objects.filter(id__in=item_ids, is_archived=False)
         }
         valid_items = {}
         changed = False

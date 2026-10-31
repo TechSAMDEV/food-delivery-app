@@ -93,7 +93,7 @@
                         {% endif %}
                     </div>
                     <p class="availability" id="delivery-message" aria-live="polite"></p>
-                    <button class="button" id="place-order" type="submit">Place order request</button>
+                    <button class="button" id="place-order" type="submit">Continue to secure payment</button>
                 </form>
             </section>
 
@@ -116,7 +116,7 @@
                     <div class="summary-item"><span>Delivery fee</span><span id="delivery-fee" data-value="{{ delivery_fee|floatformat:2 }}">{% if delivery_fee_available %}₦{{ delivery_fee|floatformat:2 }}{% else %}Unavailable{% endif %}</span></div>
                     <div class="total"><span>Total</span><span id="total-amount">₦{{ total_amount|floatformat:2 }}</span></div>
                 </div>
-                <p class="payment-note">This places an order request. Online payment is not set up yet; payment must be arranged separately.</p>
+                <p class="payment-note">You’ll be redirected to Flutterwave to pay securely. Your order is sent to the kitchen only after payment is verified.</p>
             </aside>
         </div>
     </main>
