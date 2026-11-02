@@ -70,6 +70,10 @@ INSTALLED_APPS = [
     # Your Local Apps
     'accounts',
     'store',
+    
+    # Cloudinary image storage
+    'cloudinary_storage',
+    'cloudinary',
 ]
 
 # Tell Django to use your Custom User Model
@@ -217,3 +221,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'store:menu_list'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Media configuration for cloudinary image storage
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
